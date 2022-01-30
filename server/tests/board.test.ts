@@ -1,4 +1,8 @@
-import Board from "../board";
+import {jest} from "@jest/globals";
+
+import Board from "../src/game_logic/board";
+
+
 
 test("check the intermediate nodes function", () => {
     let board = new Board(4);
