@@ -1,6 +1,6 @@
 import {jest} from "@jest/globals";
 
-import Board from "../src/game_logic/board";
+import Board from "../src/game/board";
 
 
 

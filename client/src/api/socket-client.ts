@@ -1,18 +1,13 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-const socket = io("http://localhost:3002");
+import {
+    ServerToClientEvents,
+    ClientToServerEvents,
+} from "../../../types/socketio";
 
-socket.on("connect", () => {
-    console.debug("socket connected");
-});
+export type BoomerDogSocket = Socket<
+    ServerToClientEvents,
+    ClientToServerEvents
+>;
+export const socket: BoomerDogSocket = io("http://localhost:3002");
 
-socket.on("disconnect", () => {
-    console.debug("socket disconnected");
-});
-
-export interface ServerToClientEvents { noArg: () => void; basicEmit: (a: number, b: string, c: Buffer) => void; withAck: (d: string, callback: (e: number) => void) => void; }
-export interface ClientToServerEvents { hello: () => void; }
-export interface InterServerEvents { ping: () => void; }
-export interface SocketData { name: string; age: number; }
-
-export default socket;
