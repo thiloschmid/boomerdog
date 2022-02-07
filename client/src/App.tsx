@@ -1,4 +1,10 @@
 import * as React from "react";
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    Link as RouterLink,
+} from "react-router-dom";
 import { useState } from "react";
 import {
     ChakraProvider,
@@ -23,13 +29,26 @@ import { socket } from "./api/socket-client";
 import GameBrowser from "./components/game_browser";
 import Board from "./components/board/board";
 import Cards from "./components/cards/cards";
-import { GameBase, GameState } from "../../types/game";
+import { GameState } from "../../types/game";
 import { Player } from "../../types/user";
-import { prepareDataForValidation } from "formik";
 import { ReadUserIoResponse } from "../../types/socketio";
-import { connect } from "http2";
+import Home from "./components/home";
+import Login from "./components/login";
+
+import {
+    initialState,
+    reducer,
+    AuthReducerAction,
+} from "./store/reducer/index";
+
+export const AuthContext = React.createContext({
+    state: initialState,
+    dispatch: (() => {}) as React.Dispatch<AuthReducerAction>,
+});
 
 export const App = () => {
+    const [state, dispatch] = React.useReducer(reducer, initialState);
+
     const [isConnected, setIsConnected] = useState(false);
     const [player, setPlayer] = useState<Player>();
 
@@ -65,30 +84,27 @@ export const App = () => {
     React.useEffect(connectSocket, [isConnected]);
 
     return (
-        <ChakraProvider theme={theme}>
-            <ColorModeSwitcher justifySelf="flex-end" />
-            <Layout>
-                {player && (
-                    <>
-                        <Console {...{ isConnected, player, socket }} />
-                        <GameBrowser {...{ socket, player, setPlayer }} />
-                        {player.gameId && (
-                            <>
-                                <Board socket={socket} nPlayers={4} />
-                                <Cards socket={socket} />
-                            </>
-                        )}
-                    </>
-                )}
-
-                <Box textAlign="center" fontSize="xl">
-                    <Grid minH="100vh" p={3}>
-                        <VStack spacing={8}>
-                            <SocketTester {...{ socket }} />
-                        </VStack>
-                    </Grid>
-                </Box>
-            </Layout>
-        </ChakraProvider>
+        <AuthContext.Provider value={{ state, dispatch }}>
+            <ChakraProvider theme={theme}>
+                <ColorModeSwitcher justifySelf="flex-end" />
+                <Layout>
+                    <Router>
+                        <RouterLink to="/">Home</RouterLink>
+                        <RouterLink to="/login">Login</RouterLink>
+                        <Routes>
+                            <Route
+                                path="/"
+                                element={
+                                    <Home
+                                        {...{ isConnected, player, socket }}
+                                    />
+                                }
+                            />
+                            <Route path="/login" element={<Login />} />
+                        </Routes>
+                    </Router>
+                </Layout>
+            </ChakraProvider>
+        </AuthContext.Provider>
     );
 };

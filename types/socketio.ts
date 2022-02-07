@@ -50,6 +50,11 @@ export interface ClientToServerEvents {
         callback: IoCallback<ReadUserIoResponse>
     ) => void;
 
+    "user:authenticate": (
+        payload: { code: string },
+        callback: IoCallback<IoResponse>
+    ) => void;
+
     "game:create": (
         payload: CreateGamePayload,
         callback: IoCallback<CreateGameIoResponse>

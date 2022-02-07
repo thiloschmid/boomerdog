@@ -1,6 +1,7 @@
-import { Socket } from "socket.io";
+import fetch from "node-fetch";
 import {
     IoCallback,
+    IoResponse,
     ReadUserIoResponse,
     ServerSocket,
 } from "../../../../types/socketio";
@@ -24,5 +25,22 @@ export const registerUserHandler = (
         }
     };
 
+    const authenticateUser = (
+        payload: { code: string },
+        callback: IoCallback<IoResponse>
+    ) => {
+        const proxy_url = "http://localhost:9999/authenticate";
+
+        fetch(`${proxy_url}/${payload.code}`)
+            .then((response) => response.json())
+            .then((data) => {
+                console.log((data as {token: string}).token);
+            })
+            .catch((error) => {
+                console.error("Failed to fetch OAuth token");
+            });
+    };
+
     socket.on("user:read", readUser);
+    socket.on("user:authenticate", authenticateUser);
 };

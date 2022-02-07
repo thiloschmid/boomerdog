@@ -5,7 +5,6 @@ import { Player } from "../../../types/user";
 
 import CreateGameDrawer from "./create_game_drawer";
 import { BoomerDogSocket } from "../api/socket-client";
-import { Dispatch } from "react";
 
 interface GameBrowserProps {
     socket: BoomerDogSocket;
