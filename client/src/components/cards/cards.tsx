@@ -41,7 +41,7 @@ const cardToSvg = (card: CardBase) =>
     }.svg`;
 
 interface CardsProps {
-    socket: BoomerDogSocket;
+    socket?: BoomerDogSocket;
 }
 const Cards = ({ socket }: CardsProps) => {
     const [hand, setHand] = React.useState(testHand);
@@ -49,11 +49,11 @@ const Cards = ({ socket }: CardsProps) => {
 
     const cardClicked = (i: number) => {
         selectedCard === i
-            ? socket.emit("card:clicked", hand[selectedCard])
+            ? socket && socket.emit("card:clicked", hand[selectedCard])
             : setSelectedCard(i);
     };
 
-    socket.on("cards:update", (payload) => {
+    socket && socket.on("cards:update", (payload) => {
         console.log("update cards")
         setHand(payload);
     })

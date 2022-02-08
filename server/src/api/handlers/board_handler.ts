@@ -1,4 +1,4 @@
-import { ServerSocket } from "../../../../types/socketio";
+import { ServerSocket } from "../types.js";
 
 export const registerBoardHandler = (socket: ServerSocket) => {
     socket.on("board:node:clicked", (payload: number) => {

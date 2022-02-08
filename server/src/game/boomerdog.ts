@@ -1,6 +1,6 @@
-import { CardBase } from "../../../types/game";
-import Board, { MoveValidation } from "./board";
-import Deck from "./deck";
+import { CardBase } from "../../../types/game.js";
+import Board, { MoveValidation } from "./board.js";
+import Deck from "./deck.js";
 
 const POSSIBLE_MOVES = [
     [0, 1, 2, 3, 4, 5, 6, 71, 72, 73, 74, 75, 76, 77, 8, 9, 10, 11, 12, 13, 14], // joker

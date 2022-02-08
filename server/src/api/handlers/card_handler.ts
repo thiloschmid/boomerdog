@@ -1,5 +1,5 @@
 import { CardBase } from "../../../../types/game";
-import { ServerSocket } from "../../../../types/socketio";
+import { ServerSocket } from "../types.js";
 
 const testHand = [
     { id: 0, value: 9, color: 1 },
@@ -9,11 +9,6 @@ const testHand = [
 ] as CardBase[];
 
 export const registerCardHandler = (socket: ServerSocket) => {
-
-    const updateCards = () => {
-        socket.emit()
-    }
-
     socket.on("card:clicked", (payload: CardBase) => {
         console.debug(`${payload.value} ${payload.color && payload.color} clicked`);
     });

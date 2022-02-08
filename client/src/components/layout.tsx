@@ -1,24 +1,20 @@
 import * as React from "react";
-import {
-    Box,
-    Heading,
-    Image,
-    Stack,
-    useColorModeValue,
-} from "@chakra-ui/react";
+import { Box, useColorModeValue } from "@chakra-ui/react";
 
-import logo from "../images/blaze_icon.svg";
+import NavBar from "./navbar";
 
 export interface LayoutProps {
+    isLoggedIn: boolean;
     children: React.ReactNode;
+    loginElement: JSX.Element;
 }
 
 const Layout = (props: LayoutProps) => (
     <>
-        <Image src={logo} w={50} position="absolute" top={10} left={10} />
-        <Heading position="absolute" top={10} left={100} color="cyan.800">
-            BoomerDog
-        </Heading>
+        <NavBar
+            isLoggedIn={props.isLoggedIn}
+            loginElement={props.loginElement}
+        />
         <Box
             position="relative"
             mx="auto"

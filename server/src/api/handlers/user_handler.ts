@@ -1,17 +1,9 @@
-import fetch from "node-fetch";
-import {
-    IoCallback,
-    IoResponse,
-    ReadUserIoResponse,
-    ServerSocket,
-} from "../../../../types/socketio";
-import { Player, SocketId, UserId } from "../../../../types/user";
+import { IoCallback, ReadUserIoResponse } from "../../../../types/socketio.js";
+import { ServerSocket } from "../types.js";
 
-export const registerUserHandler = (
-    socket: ServerSocket,
-    socketIdToUserId: Map<SocketId, UserId>,
-    userMap: Map<UserId, Player>
-) => {
+import { socketIdToUserId, userMap } from "../index.js";
+
+export const registerUserHandler = (socket: ServerSocket) => {
     const readUser = (
         payload: undefined,
         callback: IoCallback<ReadUserIoResponse>
@@ -24,23 +16,4 @@ export const registerUserHandler = (
             callback({ status: 1, message: "User not found" });
         }
     };
-
-    const authenticateUser = (
-        payload: { code: string },
-        callback: IoCallback<IoResponse>
-    ) => {
-        const proxy_url = "http://localhost:9999/authenticate";
-
-        fetch(`${proxy_url}/${payload.code}`)
-            .then((response) => response.json())
-            .then((data) => {
-                console.log((data as {token: string}).token);
-            })
-            .catch((error) => {
-                console.error("Failed to fetch OAuth token");
-            });
-    };
-
-    socket.on("user:read", readUser);
-    socket.on("user:authenticate", authenticateUser);
 };

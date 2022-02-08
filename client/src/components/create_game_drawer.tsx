@@ -25,13 +25,10 @@ import { CreateGameIoResponse } from "../../../types/socketio";
 import { Player } from "../../../types/user";
 
 interface CreateGameDrawerProps {
-    socket: BoomerDogSocket;
+    socket?: BoomerDogSocket;
     player: Player;
 }
-const CreateGameDrawer = ({
-    socket,
-    player,
-}: CreateGameDrawerProps) => {
+const CreateGameDrawer = ({ socket, player }: CreateGameDrawerProps) => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const initialValues = {
         gameName: "",
@@ -44,12 +41,13 @@ const CreateGameDrawer = ({
         helper: FormikHelpers<typeof initialValues>
     ) => {
         player.uuid &&
+            socket &&
             socket.emit(
                 "game:create",
                 {
                     gameName: values.gameName,
                     nPlayers: parseInt(nPlayers),
-                    playerId: player.uuid,
+                    userId: player.uuid,
                 },
                 (response: CreateGameIoResponse) => {
                     if (!response.status) {

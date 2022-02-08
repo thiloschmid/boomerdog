@@ -1,87 +1,115 @@
 import express from "express";
-import { createServer } from "http";
+import cors from "cors";
+import fetch from "node-fetch";
 import { Server } from "socket.io";
+import { createServer } from "http";
 import config from "config";
 
-import { green, red } from "./utils/colors";
-import { registerGameHandler } from "./handlers/game_handler";
+import { registerGameHandler } from "./handlers/game_handler.js";
+import { green, red } from "./utils/colors.js";
 
-import { User, Player, SocketId, UserId } from "../../../types/user";
-import { SocketIoServer, ServerSocket } from "../../../types/socketio";
-import { registerBoardHandler } from "./handlers/board_handler";
-import { registerUserHandler } from "./handlers/user_handler";
-import BoomerDogClient from "../game/boomerdogclient";
-import { CardBase } from "../../../types/game";
+import { registerBoardHandler } from "./handlers/board_handler.js";
+import { registerUserHandler } from "./handlers/user_handler.js";
+import BoomerDogClient from "../game/boomerdogclient.js";
+import { CardBase, GameState } from "../../../types/game.js";
+import { SocketIoServer, ServerSocket } from "./types.js";
+import { SocketId, UserId, User } from "../../../types/user.js";
 
-const app = express();
+export const app = express();
+
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
     cors: {
         // origin: ["http://localhost:3000"]
         origin: "*",
     },
 }) as SocketIoServer;
 
-const socketIdToUserId = new Map<SocketId, UserId>();
-const userMap = new Map<UserId, User>();
+export const socketIdToUserId = new Map<SocketId, UserId>();
+export const userMap = new Map<UserId, User>();
+export const gamesMap = new Map<string, BoomerDogClient>();
 
-const gamesMap = new Map<string, BoomerDogClient>();
-
-const updatePlayer = (playerId: string) => {
-    const user = userMap.get(playerId);
-    user && io.to(user.socketId).emit("player:update", user as Player);
-};
-
-const testHand = [
-    { id: 0, value: 9, color: 1 },
-    { id: 1, value: 0 },
-    { id: 2, value: 2, color: 3 },
-    { id: 3, value: 11, color: 2 },
-] as CardBase[];
-
-const updateCards = (gameId: string, playerId: string) => {
-    const user = userMap.get(playerId);
-    const game = gamesMap.get(gameId);
-    console.log(user && game && `emit to ${user.socketId}`)
-    user && game && io.to(user.socketId).emit("cards:update", testHand); // game.getPlayerCards(playerId));
-};
-
-// for testing just increment with each connection
-const onConnection = (socket: ServerSocket) => {
-    const clientId = io.engine.clientsCount;
-    console.log(green(`Socket connection: [${clientId}] ${socket.id}`));
-
-    const client = userMap.get(clientId);
-    if (client) {
-        console.debug(`Recover client ${clientId}`);
-    } else {
-        const player: User = {
-            name: clientId,
-            uuid: clientId,
-            socketId: socket.id,
-            gameId: null,
-        };
-        userMap.set(clientId, player);
+export const getUserFromSocket = (socket: ServerSocket) => {
+    const token = socket.handshake.auth.token;
+    if (token) {
+        const user = userMap.get(token);
+        if (user) {
+            return user;
+        }
     }
+    return null;
+};
 
-    socketIdToUserId.set(socket.id, clientId);
+const updateUser = (userId: string) => {
+    const user = userMap.get(userId);
+    user && io.to(user.socketId).emit("user:update", user);
+};
 
-    registerGameHandler(
-        io,
-        socket,
-        gamesMap,
-        userMap,
-        updatePlayer,
-        updateCards
+const onConnection = (socket: ServerSocket) => {
+    console.log(
+        green(
+            `Socket connection: ${socket.id} from ${socket.handshake.auth.token}`
+        )
     );
+    const userId = socket.handshake.auth.token;
+    socketIdToUserId.set(socket.id, userId);
+
+    // check if the player has already a defined state
+    if (userMap.has(userId)) {
+        const user = userMap.get(userId);
+        user!.socketId = socket.id;
+        // TODO handle case that user has already an assigned socket
+    } else {
+        // create User
+        const user: User = {
+            name: userId,
+            uuid: userId,
+            socketId: socket.id,
+        };
+        userMap.set(userId, user);
+    }
+    updateUser(userId);
+
+    registerGameHandler(socket);
     registerBoardHandler(socket);
-    registerUserHandler(socket, socketIdToUserId, userMap);
+    registerUserHandler(socket);
 
     socket.on("disconnect", () => {
         console.log(red(`Socket disconnect: ${socket.id}`));
+        const userId = socketIdToUserId.get(socket.id);
+        const user = userId && userMap.get(userId);
+        if (user) {
+            user.socketId = "";
+        }
         socketIdToUserId.delete(socket.id);
     });
 };
+
+app.use(cors());
+app.get("/token", async function (req, res) {
+    const proxy_url = "http://localhost:9999/authenticate";
+
+    const code = req.query.code;
+
+    const response = await fetch(`${proxy_url}/${code}`);
+    const data = (await response.json()) as { token: string };
+
+    // could get some user data here
+    // const responseToken = await fetch("https://api.github.com/user", {
+    //     headers: {
+    //         Authorization: `token ${data.token}`,
+    //     },
+    // });
+
+    if (data && data.token) {
+        res.send({ status: 0, token: `${data.token}` });
+    } else {
+        res.send({
+            status: 1,
+            message: "Unable to authenticate with github",
+        });
+    }
+});
 
 httpServer.listen(config.get("server.port"));
 console.info(`Listening on port ${config.get("server.port")}...`);

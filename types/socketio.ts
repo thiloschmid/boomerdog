@@ -1,6 +1,5 @@
-import { Socket, Server } from "socket.io";
-import { Player, UserBase } from "./user";
-import { CardBase, GameBase } from "./game";
+import { Player } from "./user";
+import { CardBase, GameBase, GameData, GameState } from "./game";
 
 /**
  * 0 : ok
@@ -9,6 +8,10 @@ import { CardBase, GameBase } from "./game";
 export interface IoResponse {
     status: number;
     message?: string;
+}
+
+export interface AuthenticateUserIoResponse extends IoResponse {
+    token?: string;
 }
 
 export interface CreateGameIoResponse extends IoResponse {
@@ -24,25 +27,29 @@ export type IoCallback<T> = (response: T) => void;
 export interface CreateGamePayload {
     gameName: string;
     nPlayers: number;
-    playerId: string;
+    userId: string;
 }
 
 export interface JoinGamePayload {
     gameId: string;
-    playerId: string;
+    userId: string;
 }
+
 
 export interface BoardUpdatePayload {
     marbles: number[][];
 }
 
 export interface ServerToClientEvents {
+    // for the game browser
     "games:update": (payload: GameBase[]) => void;
+    "user:update": (payload: Player) => void;
+
+    // events relevant once in a game
+    "gamedata:update": (payload: GameData) => void;
+    "gamestate:update": (payload: GameState) => void;
     "board:update": (payload: BoardUpdatePayload) => void;
     "cards:update": (payload: CardBase[]) => void;
-
-    "player:update": (payload: Player) => void;
-    withAck: (d: string, callback: (e: number) => void) => void;
 }
 export interface ClientToServerEvents {
     "user:read": (
@@ -52,7 +59,7 @@ export interface ClientToServerEvents {
 
     "user:authenticate": (
         payload: { code: string },
-        callback: IoCallback<IoResponse>
+        callback: IoCallback<AuthenticateUserIoResponse>
     ) => void;
 
     "game:create": (
@@ -64,7 +71,10 @@ export interface ClientToServerEvents {
         callback: IoCallback<IoResponse>
     ) => void;
     "games:read": () => void;
-    "game:start": (uuid: string, callback: IoCallback<IoResponse>) => void;
+    "game:start": (
+        payload: { uuid: string },
+        callback: IoCallback<IoResponse>
+    ) => void;
 
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
@@ -78,17 +88,3 @@ export interface SocketData {
     name: string;
     age: number;
 }
-
-export type SocketIoServer = Server<
-    ClientToServerEvents,
-    ServerToClientEvents,
-    InterServerEvents,
-    SocketData
->;
-
-export type ServerSocket = Socket<
-    ClientToServerEvents,
-    ServerToClientEvents,
-    InterServerEvents,
-    SocketData
->;

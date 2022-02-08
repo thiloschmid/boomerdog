@@ -9,8 +9,25 @@ export interface CardBase {
 export interface GameBase {
     uuid: string;
     gameName: string;
-    nPlayers: number;
+    nPlayers: number; // board size
     players: Player[];
+    hasStarted: boolean;
 }
 
-export interface GameState {}
+export enum GamePhase {
+    Swapping,
+    Playing,
+    Finalizing,
+}
+
+export interface GameData extends GameBase {
+    hasStarted: boolean;
+    order: number[];
+}
+
+export interface GameState {
+    gamePhase: GamePhase;
+    cardsToDistribute: 1 | 2 | 3 | 4 | 5 | 6;
+    activePlayerIndex: number;
+    stack?: CardBase[];
+}

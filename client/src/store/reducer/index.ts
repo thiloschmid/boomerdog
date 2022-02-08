@@ -1,22 +1,42 @@
-export const initialState = {
-    isLoggedIn: localStorage.getItem("isLoggedIn")
-        ? JSON.parse(localStorage.getItem("isLoggedIn") || "")
-        : false,
-    user: localStorage.getItem("user")
-        ? JSON.parse(localStorage.getItem("user") || "")
-        : null,
-    client_id: process.env.REACT_APP_CLIENT_ID,
-    redirect_uri: process.env.REACT_APP_REDIRECT_URI,
-    client_secret: process.env.REACT_APP_CLIENT_SECRET,
-    proxy_url: process.env.REACT_APP_PROXY_URL,
-};
-
-export interface AuthReducerAction {
-    type: "LOGIN" | "LOGOUT";
-    payload: any;
+export interface UserData {
+    id: number;
+    avatar_url: string;
+    name: string;
 }
 
-export const reducer = (state: typeof initialState, action: AuthReducerAction) => {
+export interface UserState {
+    isLoggedIn: boolean;
+    user: UserData | null;
+    client_id?: string;
+    redirect_uri?: string;
+}
+
+const tryToReadLocalStorage = (item: string) => {
+    try {
+        const entry = localStorage.getItem(item);
+        const data = entry && JSON.parse(entry);
+        return data;
+    } catch (e) {
+        console.error(`Error reading ${item} from local storage`);
+        return null;
+    }
+};
+
+export const initialState: UserState = {
+    isLoggedIn: !!tryToReadLocalStorage("isLoggedIn"),
+    user: tryToReadLocalStorage("user"),
+    client_id: process.env.REACT_APP_CLIENT_ID,
+    redirect_uri: process.env.REACT_APP_REDIRECT_URI,
+    // client_secret: process.env.REACT_APP_CLIENT_SECRET,
+    // proxy_url: process.env.REACT_APP_PROXY_URL,
+};
+
+export type AuthReducerAction = { type: "LOGIN"; payload: any } | { type: "LOGOUT" };
+
+export const reducer = (
+    state: UserState,
+    action: AuthReducerAction
+): UserState => {
     switch (action.type) {
         case "LOGIN": {
             localStorage.setItem(

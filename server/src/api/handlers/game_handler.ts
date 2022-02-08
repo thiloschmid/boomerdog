@@ -1,27 +1,46 @@
 import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 
-import BoomerDog from "../../game/boomerdog";
-
 import {
     CreateGameIoResponse,
     CreateGamePayload,
     IoCallback,
     IoResponse,
     JoinGamePayload,
-} from "../../../../types/socketio";
+} from "../../../../types/socketio.js";
 
-import { SocketIoServer, ServerSocket } from "../../../../types/socketio";
-import { Player, UserId } from "../../../../types/user";
-import BoomerDogClient from "../../game/boomerdogclient";
+import BoomerDogClient from "../../game/boomerdogclient.js";
+import { SocketIoServer, ServerSocket } from "../types.js";
+import { Player, UserId } from "../../../../types/user.js";
+import { io, gamesMap, getUserFromSocket, userMap } from "../index.js";
+import { CardBase } from "../../../../types/game.js";
+
+const testHand = [
+    { id: 0, value: 9, color: 1 },
+    { id: 1, value: 0 },
+    { id: 2, value: 2, color: 3 },
+    { id: 3, value: 11, color: 2 },
+] as CardBase[];
+
+const updateCards = (gameId: string, userId: string) => {
+    const user = userMap.get(userId);
+    const game = gamesMap.get(gameId);
+    console.log(user && game && `emit to ${user.socketId}`);
+    user && game && io.to(user.socketId).emit("cards:update", testHand); // game.getPlayerCards(userId));
+};
+
+const updateGameData = (gameId: string) => {
+    const game = gamesMap.get(gameId);
+    game && io.to(gameId).emit("gamedata:update", game.getGameData());
+};
 
 export const registerGameHandler = (
     io: SocketIoServer,
     socket: ServerSocket,
     gamesMap: Map<string, BoomerDogClient>,
     userMap: Map<UserId, Player>,
-    updatePlayer: (playerId: string) => void,
-    updateCards: (gameId: string, playerId: string) => void
+    updatePlayer: (userId: string) => void,
+    updateCards: (gameId: string, userId: string) => void
 ) => {
     const emitGameList = (broadcast?: boolean) => {
         // if no receiver specified, send to all connected clients
@@ -34,10 +53,10 @@ export const registerGameHandler = (
     };
 
     const createGame = (
-        { gameName, nPlayers, playerId }: CreateGamePayload,
+        { gameName, nPlayers, userId }: CreateGamePayload,
         callback: IoCallback<CreateGameIoResponse>
     ) => {
-        const player = userMap.get(playerId);
+        const player = userMap.get(userId);
 
         if (!player) {
             callback({ status: 1, message: "Player not found" });
@@ -62,21 +81,23 @@ export const registerGameHandler = (
         player.gameId = uuid;
         gamesMap.set(uuid, game);
         emitGameList(true);
-        updatePlayer(playerId);
+        updatePlayer(userId);
+        socket.join(uuid);
+        updateGameData(uuid);
+
         callback({ status: 0, gameId: uuid });
     };
 
     const joinGame = (
-        { gameId, playerId }: JoinGamePayload,
+        { gameId, userId }: JoinGamePayload,
         callback: IoCallback<IoResponse>
     ) => {
-        const player = userMap.get(playerId);
+        const player = userMap.get(userId);
 
         if (!player) {
             callback({ status: 1, message: "Player not found" });
             return;
         }
-
         if (player.gameId) {
             callback({ status: 1, message: "Player is already in a game" });
             return;
@@ -94,7 +115,8 @@ export const registerGameHandler = (
 
         player.gameId = gameId;
         emitGameList(true);
-        updatePlayer(playerId);
+        updatePlayer(userId);
+        updateGameData(gameId);
         callback({ status: 0 });
     };
 
@@ -103,17 +125,27 @@ export const registerGameHandler = (
         callback: IoCallback<IoResponse>
     ) => {
         const game = gamesMap.get(uuid);
+        const user = getUserFromSocket(socket);
 
-        if (game) {
-            game.setupGame();
-            for (const player of game.gameInfo.players) {
-                console.log("update cards");
-                updateCards(game.gameInfo.uuid, player.uuid);
-            }
-            callback({ status: 0 });
-        } else {
-            callback({ status: 1, message: "Game does not exist" });
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
         }
+        if (uuid !== user.gameId) {
+            callback({ status: 1, message: "User not in game" });
+            return;
+        }
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+        game.setupGame();
+        updateGameData(uuid);
+        // updateGameState(uuid);
+        for (const player of game.gameInfo.players) {
+            updateCards(game.gameInfo.uuid, player.uuid);
+        }
+        callback({ status: 0 });
     };
 
     socket.on("games:read", emitGameList);

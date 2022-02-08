@@ -7,25 +7,27 @@ import CreateGameDrawer from "./create_game_drawer";
 import { BoomerDogSocket } from "../api/socket-client";
 
 interface GameBrowserProps {
-    socket: BoomerDogSocket;
+    socket?: BoomerDogSocket;
     player: Player;
 }
 const GameBrowser = ({ socket, player }: GameBrowserProps) => {
     const [games, setGames] = React.useState<GameBase[]>([]);
 
-    socket.on("games:update", (payload) => {
-        setGames(payload);
-    });
-
     React.useEffect(() => {
-        socket.emit("games:read");
+        if (socket) {
+            socket.on("games:update", (payload) => {
+                setGames(payload);
+            });
+            socket.emit("games:read");
+        }
     }, [socket]);
 
     const joinGame = (uuid: string) => {
         player &&
+            socket &&
             socket.emit(
                 "game:join",
-                { gameId: uuid, playerId: player.uuid },
+                { gameId: uuid, userId: player.uuid },
                 (response) => {
                     if (!response.status) {
                     } else {

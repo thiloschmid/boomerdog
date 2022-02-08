@@ -14,6 +14,7 @@
     "@types/node": "^12.20.42",
     "@types/react": "^16.14.22",
     "@types/react-dom": "^16.9.14",
+    "cors": "^2.8.5",
     "formik": "^2.2.9",
     "framer-motion": "^4.1.17",
     "react": "^17.0.2",

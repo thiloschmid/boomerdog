@@ -1,11 +1,11 @@
-import { GameBase } from "../../../types/game";
-import { Player } from "../../../types/user";
-import BoomerDog from "./boomerdog";
+import { GameBase } from "../../../types/game.js";
+import { Player } from "../../../types/user.js";
+import BoomerDog from "./boomerdog.js";
 
 export default class BoomerDogClient extends BoomerDog {
     gameInfo: GameBase;
-    playerIdToIndex;
-
+    userIdToIndex;
+    order;
     constructor(uuid: string, gameName: string, nPlayers: number) {
         super(nPlayers);
 
@@ -14,9 +14,22 @@ export default class BoomerDogClient extends BoomerDog {
             gameName: gameName,
             nPlayers: nPlayers,
             players: new Array<Player>(),
+            hasStarted: false,
         };
 
-        this.playerIdToIndex = new Map<string, number>();
+        this.order = [...Array(nPlayers).keys()]; // defaults to [0, 1, ... , nPlayers-1]
+        this.userIdToIndex = new Map<string, number>();
+    }
+
+    /**
+     *
+     * @param userId The user id
+     * @returns The index with respect to the underlying BoomerDog instance.
+     */
+    getPlayerIndex(userId: string) {
+        const index = this.userIdToIndex.get(userId);
+        if (typeof index === "undefined") return null;
+        return this.order[index];
     }
 
     playerJoin(player: Player) {
@@ -35,16 +48,25 @@ export default class BoomerDogClient extends BoomerDog {
         }
 
         this.gameInfo.players.push(player);
-        this.playerIdToIndex.set(player.uuid, this.gameInfo.players.length);
+        this.userIdToIndex.set(player.uuid, this.gameInfo.players.length);
         return "";
     }
 
-    getPlayerCards(playerId: string) {
-        const index = this.playerIdToIndex.get(playerId);
+    getPlayerCards(userId: string) {
+        const index = this.getPlayerIndex(userId);
 
-        if (typeof index === "number") {
-            return this.deck.hands[index];
+        if (index === null) {
+            return [];
         }
-        return [];
+        return this.deck.hands[index];
+    }
+
+    getGameData() {
+        return { ...this.gameInfo, order: this.order };
+    }
+
+    setupGame() {
+        super.setupGame();
+        this.gameInfo.hasStarted = true;
     }
 }

@@ -1,35 +1,26 @@
 import * as React from "react";
-import { Dispatch } from "react";
-
 import { Button, HStack, Spinner, Stack, Text, VStack } from "@chakra-ui/react";
 
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import { Socket } from "socket.io-client";
+import { BoomerDogSocket } from "../api/socket-client";
 import { Player } from "../../../types/user";
 import { IoResponse } from "../../../types/socketio";
 
 export interface ConsoleProps {
     isConnected: boolean;
     player: Player;
-    socket: Socket;
+    socket?: BoomerDogSocket; // authenticated socket
 }
 
-const Console = ({
-    isConnected,
-    player,
-    socket,
-}: ConsoleProps) => {
+const Console = ({ isConnected, player, socket }: ConsoleProps) => {
     const startGame = () => {
         player &&
-            socket.emit(
-                "game:start",
-                { uuid: player.gameId },
-                (response: IoResponse) => {
-                    if (response.status) {
-                        console.error(response.message);
-                    }
+            socket &&
+            socket.emit("game:start", undefined, (response: IoResponse) => {
+                if (response.status) {
+                    console.error(response.message);
                 }
-            );
+            });
     };
 
     return (
@@ -46,7 +37,10 @@ const Console = ({
                         // size="xl"
                     />
                 )}
-                ;{isConnected && <Text>{`${socket.id} // ${player.uuid}`}</Text>}
+                ;
+                {isConnected && (
+                    <Text>{`${socket && socket.id} // ${player.uuid}`}</Text>
+                )}
             </Stack>
             {player.gameId && (
                 <HStack>

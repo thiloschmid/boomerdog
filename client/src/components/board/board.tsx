@@ -21,7 +21,7 @@ const occupations = {
 
 interface BoardProps {
     nPlayers: number;
-    socket: BoomerDogSocket;
+    socket?: BoomerDogSocket;
 }
 const Board = ({ socket }: BoardProps) => {
     const [boardData, setBoardData] =
@@ -31,15 +31,15 @@ const Board = ({ socket }: BoardProps) => {
 
     const nodeClicked = (n: number) => {
         console.log(`node ${n} clicked`);
-        socket.emit("board:node:clicked", n);
+        socket && socket.emit("board:node:clicked", n);
     };
 
     const marbleClicked = (n: number) => {
         console.log(`node ${n} clicked`);
-        socket.emit("board:marble:clicked", n);
+        socket && socket.emit("board:marble:clicked", n);
     };
 
-    socket.on("board:update", (payload) => {
+    socket && socket.on("board:update", (payload) => {
         setBoardData(payload);
     });
 

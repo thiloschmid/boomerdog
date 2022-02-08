@@ -1,12 +1,23 @@
 import * as React from "react";
-import { Box, Button, Link, Spinner } from "@chakra-ui/react";
+import { Box, Button, Spinner, useDisclosure } from "@chakra-ui/react";
 import { Navigate } from "react-router-dom";
 import { GoMarkGithub } from "react-icons/go";
 
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+} from "@chakra-ui/react";
+import { FaDog } from "react-icons/fa";
+
 import { AuthContext } from "../App";
-import { socket } from "../api/socket-client";
 
 const Login = () => {
+    const { isOpen, onOpen, onClose } = useDisclosure(); // for the modal overlay
     const { state, dispatch } = React.useContext(AuthContext);
     const [data, setData] = React.useState({
         errorMessage: "",
@@ -14,6 +25,23 @@ const Login = () => {
     });
 
     const { client_id, redirect_uri } = state;
+
+    const fetchUserData = (token: string) => {
+        fetch("https://api.github.com/user", {
+            method: "get",
+            headers: {
+                Authorization: `token ${token}`,
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data);
+                dispatch({
+                    type: "LOGIN",
+                    payload: { user: data, isLoggedIn: true },
+                });
+            });
+    };
 
     React.useEffect(() => {
         // After requesting Github access, Github redirects back to your app with a code parameter
@@ -26,60 +54,21 @@ const Login = () => {
             window.history.pushState({}, "", newUrl[0]);
             setData((previous) => ({ ...previous, isLoading: true }));
 
-            // const requestData = {
-            //     code: newUrl[1],
-            // };
-
-            const proxy_url =
-                state.proxy_url ||
-                "https://github.com/login/oauth/access_token";
-
-            // Use code parameter and other parameters to make POST request to proxy_server
-            // fetch(proxy_url, {
-            //     method: "POST",
-            //     body: JSON.stringify(requestData),
-            // })
-            //     .then((response) => response.json())
-            //     .then((data) => {
-            //         dispatch(state, {
-            //             type: "LOGIN",
-            //             payload: { user: data, isLoggedIn: true },
-            //         });
-            //     })
-            //     .catch((error) => {
-            //         setData({
-            //             isLoading: false,
-            //             errorMessage: "Sorry! Login failed",
-            //         });
-            //     });
-
             const code = newUrl[1];
-            socket.emit("user:authenticate", { code }, (response) => {
-                if (!response.status) {
-                    dispatch({
-                        type: "LOGIN",
-                        payload: { user: "", isLoggedIn: true },
-                    });
-                }
-            });
 
-            /*fetch(`${proxy_url}/${code}`)
+            const apiUrl = new URL("token", process.env.REACT_APP_BACKEND_URL);
+            apiUrl.search = new URLSearchParams({ code: code }).toString();
+
+            console.log(apiUrl.toString());
+
+            fetch(apiUrl.toString())
                 .then((response) => response.json())
                 .then((data) => {
-                    dispatch({
-                        type: "LOGIN",
-                        payload: { user: data, isLoggedIn: true },
-                    });
-                    console.log(data);
+                    if (!data.status) {
+                        data.token && fetchUserData(data.token);
+                    }
                 })
-                .catch((error) => {
-                    setData({
-                        isLoading: false,
-                        errorMessage: "Sorry! Login failed",
-                    });
-                });
-
-                */
+                .catch((e) => console.error(e));
         }
     }, [state, dispatch, data]);
 
@@ -89,29 +78,57 @@ const Login = () => {
     }
 
     return (
-        <Box>
-            {data.isLoading ? (
-                <Spinner
-                    thickness="4px"
-                    speed="0.65s"
-                    emptyColor="gray.200"
-                    color="blue.500"
-                    size="xl"
-                />
-            ) : (
-                <Button
-                    colorScheme={"blackAlpha"}
-                    leftIcon={<GoMarkGithub />}
-                    as={"a"}
-                    href={`https://github.com/login/oauth/authorize?scope=user&client_id=${client_id}&redirect_uri=${redirect_uri}`}
-                    onClick={() => {
-                        setData({ ...data, errorMessage: "" });
-                    }}
-                >
-                    <span>Login with GitHub</span>
-                </Button>
-            )}
-        </Box>
+        <>
+            <Button
+                variant="solid"
+                colorScheme={"green"}
+                leftIcon={<FaDog />}
+                mr={4}
+                onClick={onOpen}
+            >
+                Login
+            </Button>
+
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Authenticate</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Box>
+                            {data.isLoading ? (
+                                <Spinner
+                                    mx={"auto"}
+                                    thickness="4px"
+                                    speed="0.65s"
+                                    emptyColor="gray.200"
+                                    color="blue.500"
+                                    size="xl"
+                                />
+                            ) : (
+                                <Button
+                                    mx={"auto"}
+                                    colorScheme={"blackAlpha"}
+                                    leftIcon={<GoMarkGithub />}
+                                    as={"a"}
+                                    href={`https://github.com/login/oauth/authorize?scope=user&client_id=${client_id}&redirect_uri=${redirect_uri}`}
+                                    onClick={() => {
+                                        setData({ ...data, errorMessage: "" });
+                                    }}
+                                >
+                                    <span>Login with GitHub</span>
+                                </Button>
+                            )}
+                        </Box>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme="blue" mr={3} onClick={onClose}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+        </>
     );
 };
 
