@@ -34,11 +34,11 @@ const Login = () => {
             },
         })
             .then((response) => response.json())
-            .then((data) => {
-                console.log(data);
+            .then((userData) => {
+                console.log(userData);
                 dispatch({
                     type: "LOGIN",
-                    payload: { user: data, isLoggedIn: true },
+                    payload: { user: userData, isLoggedIn: true },
                 });
             });
     };
@@ -59,13 +59,11 @@ const Login = () => {
             const apiUrl = new URL("token", process.env.REACT_APP_BACKEND_URL);
             apiUrl.search = new URLSearchParams({ code: code }).toString();
 
-            console.log(apiUrl.toString());
-
             fetch(apiUrl.toString())
                 .then((response) => response.json())
-                .then((data) => {
-                    if (!data.status) {
-                        data.token && fetchUserData(data.token);
+                .then((tokenData) => {
+                    if (!tokenData.status) {
+                        tokenData.token && fetchUserData(tokenData.token);
                     }
                 })
                 .catch((e) => console.error(e));

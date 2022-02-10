@@ -52,13 +52,13 @@ export default class BoomerDogClient extends BoomerDog {
         return "";
     }
 
-    getPlayerCards(userId: string) {
+    getPlayerCardsByUserId(userId: string) {
         const index = this.getPlayerIndex(userId);
 
         if (index === null) {
             return [];
         }
-        return this.deck.hands[index];
+        return super.getPlayerCards(index);
     }
 
     getGameData() {

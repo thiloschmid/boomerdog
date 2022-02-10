@@ -12,8 +12,15 @@ import {
 import BoomerDogClient from "../../game/boomerdogclient.js";
 import { SocketIoServer, ServerSocket } from "../types.js";
 import { Player, UserId } from "../../../../types/user.js";
-import { io, gamesMap, getUserFromSocket, userMap } from "../index.js";
+import {
+    io,
+    gamesMap,
+    getUserFromSocket,
+    userMap,
+    updateUser,
+} from "../index.js";
 import { CardBase } from "../../../../types/game.js";
+import { updateBoard } from "./board_handler.js";
 
 const testHand = [
     { id: 0, value: 9, color: 1 },
@@ -22,26 +29,29 @@ const testHand = [
     { id: 3, value: 11, color: 2 },
 ] as CardBase[];
 
-const updateCards = (gameId: string, userId: string) => {
+export const updateCards = (gameId: string, userId: string) => {
     const user = userMap.get(userId);
     const game = gamesMap.get(gameId);
     console.log(user && game && `emit to ${user.socketId}`);
-    user && game && io.to(user.socketId).emit("cards:update", testHand); // game.getPlayerCards(userId));
+    // user && game && io.to(user.socketId).emit("cards:update", testHand); // game.getPlayerCards(userId));
+    game &&
+        user &&
+        io
+            .to(user.socketId)
+            .emit("cards:update", game.getPlayerCardsByUserId(userId));
 };
 
-const updateGameData = (gameId: string) => {
+export const updateGameData = (gameId: string, socketId?: string) => {
     const game = gamesMap.get(gameId);
-    game && io.to(gameId).emit("gamedata:update", game.getGameData());
+
+    // if socketId is supplied, send only to socketId, otherwise update all in the gameId room
+    game &&
+        io.to(socketId || gameId).emit("gamedata:update", game.getGameData());
 };
 
-export const registerGameHandler = (
-    io: SocketIoServer,
-    socket: ServerSocket,
-    gamesMap: Map<string, BoomerDogClient>,
-    userMap: Map<UserId, Player>,
-    updatePlayer: (userId: string) => void,
-    updateCards: (gameId: string, userId: string) => void
-) => {
+export const updateGameState = (gameId: string, socketId?: string) => {};
+
+export const registerGameHandler = (socket: ServerSocket) => {
     const emitGameList = (broadcast?: boolean) => {
         // if no receiver specified, send to all connected clients
         const destination = broadcast ? io : socket;
@@ -81,7 +91,7 @@ export const registerGameHandler = (
         player.gameId = uuid;
         gamesMap.set(uuid, game);
         emitGameList(true);
-        updatePlayer(userId);
+        updateUser(userId);
         socket.join(uuid);
         updateGameData(uuid);
 
@@ -99,7 +109,13 @@ export const registerGameHandler = (
             return;
         }
         if (player.gameId) {
-            callback({ status: 1, message: "Player is already in a game" });
+            callback({
+                status: 1,
+                message:
+                    player.gameId === gameId
+                        ? "Player is already in this game"
+                        : "Player is already in another game",
+            });
             return;
         }
 
@@ -115,23 +131,24 @@ export const registerGameHandler = (
 
         player.gameId = gameId;
         emitGameList(true);
-        updatePlayer(userId);
+        updateUser(userId);
         updateGameData(gameId);
+        updateBoard(gameId);
         callback({ status: 0 });
     };
 
     const startGame = (
-        { uuid }: { uuid: string },
+        { gameId }: { gameId: string },
         callback: IoCallback<IoResponse>
     ) => {
-        const game = gamesMap.get(uuid);
+        const game = gamesMap.get(gameId);
         const user = getUserFromSocket(socket);
 
         if (!user) {
             callback({ status: 1, message: "User not found" });
             return;
         }
-        if (uuid !== user.gameId) {
+        if (gameId !== user.gameId) {
             callback({ status: 1, message: "User not in game" });
             return;
         }
@@ -139,8 +156,14 @@ export const registerGameHandler = (
             callback({ status: 1, message: "Game does not exist" });
             return;
         }
+        if (game.gameInfo.hasStarted) {
+            callback({ status: 1, message: "Game has already started" });
+            return;
+        }
+
         game.setupGame();
-        updateGameData(uuid);
+        updateGameData(gameId);
+        updateBoard(gameId);
         // updateGameState(uuid);
         for (const player of game.gameInfo.players) {
             updateCards(game.gameInfo.uuid, player.uuid);

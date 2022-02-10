@@ -35,11 +35,6 @@ export interface JoinGamePayload {
     userId: string;
 }
 
-
-export interface BoardUpdatePayload {
-    marbles: number[][];
-}
-
 export interface ServerToClientEvents {
     // for the game browser
     "games:update": (payload: GameBase[]) => void;
@@ -48,9 +43,14 @@ export interface ServerToClientEvents {
     // events relevant once in a game
     "gamedata:update": (payload: GameData) => void;
     "gamestate:update": (payload: GameState) => void;
-    "board:update": (payload: BoardUpdatePayload) => void;
-    "cards:update": (payload: CardBase[]) => void;
+    "board:update": (payload: number[][]) => void;
+    "cards:update": (payload: (CardBase | null)[]) => void;
 }
+
+interface CardClickedResponse extends IoResponse {
+    possibleMoves: number[][][];
+}
+
 export interface ClientToServerEvents {
     "user:read": (
         payload: undefined,
@@ -72,14 +72,17 @@ export interface ClientToServerEvents {
     ) => void;
     "games:read": () => void;
     "game:start": (
-        payload: { uuid: string },
+        payload: { gameId: string },
         callback: IoCallback<IoResponse>
     ) => void;
 
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
 
-    "card:clicked": (payload: any) => void;
+    "card:clicked": (
+        payload: number,
+        callback: IoCallback<CardClickedResponse>
+    ) => void;
 }
 export interface InterServerEvents {
     ping: () => void;

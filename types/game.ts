@@ -1,5 +1,11 @@
 import { Player } from "./user";
 
+export interface Move {
+    p: number,
+    m: number,
+    move: number,
+}
+
 export interface CardBase {
     id: number; // uniquely identifies card
     value: number; // takes values between 1 and 14

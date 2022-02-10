@@ -13,42 +13,24 @@ export interface ConsoleProps {
 }
 
 const Console = ({ isConnected, player, socket }: ConsoleProps) => {
-    const startGame = () => {
-        player &&
-            socket &&
-            socket.emit("game:start", undefined, (response: IoResponse) => {
-                if (response.status) {
-                    console.error(response.message);
-                }
-            });
-    };
-
     return (
-        <VStack>
-            <Stack mt={20} p={10} direction="row" spacing={2}>
-                {isConnected ? (
-                    <CheckCircleIcon w={6} h={6} color="green.600" />
-                ) : (
-                    <Spinner
-                        thickness="4px"
-                        speed="0.65s"
-                        emptyColor="gray.200"
-                        color="blue.500"
-                        // size="xl"
-                    />
-                )}
-                ;
-                {isConnected && (
-                    <Text>{`${socket && socket.id} // ${player.uuid}`}</Text>
-                )}
-            </Stack>
-            {player.gameId && (
-                <HStack>
-                    <Text>{`Game uuid: ${player.gameId}`}</Text>
-                    <Button onClick={startGame}>Start game</Button>
-                </HStack>
+        <Stack p={4} direction="row" spacing={2}>
+            {isConnected ? (
+                <CheckCircleIcon w={6} h={6} color="green.600" />
+            ) : (
+                <Spinner
+                    thickness="4px"
+                    speed="0.65s"
+                    emptyColor="gray.200"
+                    color="blue.500"
+                    // size="xl"
+                />
             )}
-        </VStack>
+            ;
+            {isConnected && (
+                <Text>{`${socket && socket.id} // ${player.uuid}`}</Text>
+            )}
+        </Stack>
     );
 };
 

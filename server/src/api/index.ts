@@ -5,7 +5,12 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import config from "config";
 
-import { registerGameHandler } from "./handlers/game_handler.js";
+import {
+    registerGameHandler,
+    updateCards,
+    updateGameData,
+    updateGameState,
+} from "./handlers/game_handler.js";
 import { green, red } from "./utils/colors.js";
 
 import { registerBoardHandler } from "./handlers/board_handler.js";
@@ -14,6 +19,7 @@ import BoomerDogClient from "../game/boomerdogclient.js";
 import { CardBase, GameState } from "../../../types/game.js";
 import { SocketIoServer, ServerSocket } from "./types.js";
 import { SocketId, UserId, User } from "../../../types/user.js";
+import { registerCardHandler } from "./handlers/card_handler.js";
 
 export const app = express();
 
@@ -40,7 +46,7 @@ export const getUserFromSocket = (socket: ServerSocket) => {
     return null;
 };
 
-const updateUser = (userId: string) => {
+export const updateUser = (userId: string) => {
     const user = userMap.get(userId);
     user && io.to(user.socketId).emit("user:update", user);
 };
@@ -54,24 +60,38 @@ const onConnection = (socket: ServerSocket) => {
     const userId = socket.handshake.auth.token;
     socketIdToUserId.set(socket.id, userId);
 
+    let user: User;
+
     // check if the player has already a defined state
     if (userMap.has(userId)) {
-        const user = userMap.get(userId);
+        user = userMap.get(userId) as User;
         user!.socketId = socket.id;
         // TODO handle case that user has already an assigned socket
     } else {
         // create User
-        const user: User = {
+        user = {
             name: userId,
             uuid: userId,
             socketId: socket.id,
         };
         userMap.set(userId, user);
     }
+
     updateUser(userId);
+
+    // check if the user was in a game
+    if (user.gameId) {
+        updateGameData(user.gameId, user.socketId);
+        const game = gamesMap.get(user.gameId);
+        if (game?.gameInfo.hasStarted) {
+            updateGameState(user.gameId, user.socketId);
+            updateCards(user.gameId, userId);
+        }
+    }
 
     registerGameHandler(socket);
     registerBoardHandler(socket);
+    registerCardHandler(socket);
     registerUserHandler(socket);
 
     socket.on("disconnect", () => {

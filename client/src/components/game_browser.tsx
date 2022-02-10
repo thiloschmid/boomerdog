@@ -50,32 +50,34 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                     </Tr>
                 </Thead>
                 <Tbody>
-                    {games.map((g) => (
-                        <Tr
-                            bg={
-                                player &&
-                                g.players
-                                    .map((p) => p.uuid)
-                                    .includes(player.uuid)
-                                    ? "red.100"
-                                    : ""
-                            }
-                            key={g.gameName}
-                        >
-                            <Td>{g.gameName}</Td>
-                            <Td isNumeric>{g.nPlayers}</Td>
-                            <Td>{g.players.map((p) => p.name).join(", ")}</Td>
-                            <Td>
-                                <Button
-                                    onClick={() => {
-                                        joinGame(g.uuid);
-                                    }}
-                                >
-                                    Join
-                                </Button>
-                            </Td>
-                        </Tr>
-                    ))}
+                    {games.map((g) => {
+                        const isPlayersGame =
+                            player &&
+                            g.players.map((p) => p.uuid).includes(player.uuid);
+                        return (
+                            <Tr
+                                bg={isPlayersGame ? "cyan.100" : ""}
+                                key={g.gameName}
+                            >
+                                <Td>{g.gameName}</Td>
+                                <Td isNumeric>{g.nPlayers}</Td>
+                                <Td>
+                                    {g.players.map((p) => p.name).join(", ")}
+                                </Td>
+                                <Td>
+                                    {!isPlayersGame && (
+                                        <Button
+                                            onClick={() => {
+                                                joinGame(g.uuid);
+                                            }}
+                                        >
+                                            Join
+                                        </Button>
+                                    )}
+                                </Td>
+                            </Tr>
+                        );
+                    })}
                 </Tbody>
             </Table>
         </>

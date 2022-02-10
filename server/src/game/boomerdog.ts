@@ -1,9 +1,9 @@
-import { CardBase } from "../../../types/game.js";
-import Board, { MoveValidation } from "./board.js";
-import Deck from "./deck.js";
+import { CardBase } from "../../../types/game";
+import Board, { MoveValidation } from "./board";
+import Deck from "./deck";
 
 const POSSIBLE_MOVES = [
-    [0, 1, 2, 3, 4, 5, 6, 71, 72, 73, 74, 75, 76, 77, 8, 9, 10, 11, 12, 13, 14], // joker
+    [0, 1, 2, 3, 4, -4, 5, 6, 71, 72, 73, 74, 75, 76, 77, 8, 9, 10, 11, 12, 13, 14], // joker
     [0, 1, 11], // ace
     [2],
     [3],
@@ -32,12 +32,33 @@ export default class BoomerDog {
         this.deck.distributeCards(6);
     }
 
+    getPlayerCards(p: number) {
+        return this.deck.hands[p];
+    }
+
+    getBoardData() {
+        return this.board.getBoardData();
+    }
+
+    getAllMoves(p: number) {
+        return this.deck.hands[p].map((card) =>
+            card
+                ? this.board.marbleLocations[p].map((n) =>
+                      POSSIBLE_MOVES[card.value].flatMap((move) =>
+                          this.board.getPossibleDestinations(p, n, move)
+                      )
+                  )
+                : null
+        );
+    }
+
     performMove(
         p: number,
+        m: number,
         card: CardBase,
         move: number,
-        node: number,
-        node2: number | undefined,
+        nTarget: number | undefined,
+        mTarget: number | undefined,
         enterEndzone: boolean | undefined
     ) {
         if (!POSSIBLE_MOVES[card.value].includes(move)) {
@@ -60,12 +81,7 @@ export default class BoomerDog {
             case 11:
             case 12:
             case 13:
-                validation = this.board.validateMove(
-                    p,
-                    node,
-                    move,
-                    enterEndzone
-                );
+                validation = this.board.validateMove(p, m, move, enterEndzone);
                 break;
 
             // handle going out
@@ -75,9 +91,10 @@ export default class BoomerDog {
 
             // handle switcheroos
             case 14:
-                if (!node2)
+                if (!nTarget || !mTarget) {
                     throw new Error("A second node needs to be specified");
-                validation = this.board.validateSwitch(p, node, node2);
+                }
+                validation = this.board.validateSwitch(p, m, nTarget, mTarget);
                 break;
 
             case 71:
@@ -88,7 +105,7 @@ export default class BoomerDog {
             case 76:
             case 77:
                 // TODO: check if the 7 moves can be completed
-                validation = this.board.validateMove(p, node, move);
+                validation = this.board.validateMove(p, m, move);
                 break;
             default:
                 validation = [false, "Invalid move"];

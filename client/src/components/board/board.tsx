@@ -4,7 +4,6 @@ import { chakra, Box, AspectRatio } from "@chakra-ui/react";
 import { BoomerDogSocket } from "../../api/socket-client";
 
 import { boardNodes } from "./board_data";
-import { BoardUpdatePayload } from "../../../../types/socketio";
 
 const RADIUS = { inner: 12, outer: 18 };
 const BOARD_SIZE = { height: 800, width: 800 };
@@ -12,20 +11,21 @@ const STROKE_WIDTH = ".2em";
 
 const COLORS = ["red", "yellow.400", "green.600", "blue.600"];
 
-const occupations = {
-    marbles: [
-        [0, 0],
-        [12, 0],
-    ],
-};
+const marbleLocations = [
+    [100, 101, 102, 103],
+    [110, 111, 112, 113],
+    [120, 121, 122, 123],
+    [130, 131, 132, 133],
+];
 
 interface BoardProps {
     nPlayers: number;
+    playerIndex: number;
     socket?: BoomerDogSocket;
 }
-const Board = ({ socket }: BoardProps) => {
+const Board = ({ socket, playerIndex }: BoardProps) => {
     const [boardData, setBoardData] =
-        React.useState<BoardUpdatePayload>(occupations);
+        React.useState<number[][]>(marbleLocations);
 
     const boardClicked = () => {};
 
@@ -39,9 +39,11 @@ const Board = ({ socket }: BoardProps) => {
         socket && socket.emit("board:marble:clicked", n);
     };
 
-    socket && socket.on("board:update", (payload) => {
-        setBoardData(payload);
-    });
+    socket &&
+        socket.on("board:update", (payload) => {
+            console.log("update board");
+            setBoardData(payload);
+        });
 
     const BoardNode = (data: { id: number; x: number; y: number }) => (
         // for 4 players: 0 to 3 corresponds to being occupied by the corresponding
@@ -73,7 +75,7 @@ const Board = ({ socket }: BoardProps) => {
             className="step"
             cx={data.x}
             cy={data.y}
-            r={RADIUS.inner - 1}
+            r={data.color===playerIndex ? RADIUS.inner +4 : RADIUS.inner -1}
         />
     );
 
@@ -152,12 +154,41 @@ const Board = ({ socket }: BoardProps) => {
                 {boardNodes.outlines.map((data) => (
                     <Outline key={`outline-${data.x}-${data.y}`} {...data} />
                 ))}
-                {boardData.marbles.map((node) => (
-                    <OccupiedNode
-                        key={node[0]}
-                        {...{ ...boardNodes.nodes[node[0]], color: node[1] }}
-                    />
-                ))}
+                {boardData.map((marbles, i) =>
+                    marbles.map((m, j) => {
+                        if (m <= 64 && m >= 0) {
+                            return (
+                                <OccupiedNode
+                                    key={`${i} ${j}`}
+                                    {...{
+                                        ...boardNodes.nodes[m],
+                                        color: i,
+                                    }}
+                                />
+                            );
+                        } else if (m === -1) {
+                            return (
+                                <OccupiedNode
+                                    key={`${i} ${j}`}
+                                    {...{
+                                        ...boardNodes.bases[4 * i + j],
+                                        color: i,
+                                    }}
+                                />
+                            );
+                        } else if (m >= 100) {
+                            return (
+                                <OccupiedNode
+                                    key={`${i} ${j}`}
+                                    {...{
+                                        ...boardNodes.endzones[4 * i + j],
+                                        color: i,
+                                    }}
+                                />
+                            );
+                        }
+                    })
+                )}
             </svg>
         </AspectRatio>
     );

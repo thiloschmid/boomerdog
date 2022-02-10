@@ -10,8 +10,6 @@ export type BoomerDogSocket = Socket<
     ClientToServerEvents
 >;
 
-export const socket: BoomerDogSocket = io("http://localhost:3002");
-
 export const getAuthenticatedSocket = (token: string) => {
     const socket: BoomerDogSocket = io("http://localhost:3002", {
         auth: { token: `${token}` },

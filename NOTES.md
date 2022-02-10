@@ -16,11 +16,31 @@ If the client sends a request for a certain move,
 
 ## Board class
 
+In the following, only the four player board is described. 
+
+### Node
+
+There are three kinds of nodes:
+- Regular nodes, where all marbles can go. They are indexed by the numbers 0 to 63
+- Base nodes, which belong to a player and is the starting position for a player's marble. They all have the index -1, as their order does not matter.
+- Endzone nodes, which players aim to reach to complete the game. Their indices take the values `100-103` for player `0`, the values `110-113`, for player `1`, etc. 
+
+### Variable names
+
+The relevant quantities in the methods are 
+
+- **Nodes** `n` $\in \{0,1,...,63\} \cup \{-1\} \cup \{100, ... , 103\} \cup ... \cup \{130, ... , 133\}$ corresponding to regular, base, and endzone nodes.
+- **Player** `p` $\in \{0, 1, 2, 3\}$
+- **Marble** `m` $\in \{0,1,2,3\}$ corresponds to the index of the marble. Therefore, a marble is only well-defined if `p` is known.
+- **Card** `c` $\in \{0,1,..., n_c\}$ where $n_c$ is the number of cards which have been dealt at the start of the round
+
+### Moves
+
 In order to make a move, first the `validateMove` function has to be called. In case the move is valid, `validateMove` returns a callback function, which can be called to execute the requested move. 
 
 The same principle also applies to the `validateSwitch` function. 
 
-## CardsHandler class
+## Cards
 
 | Value | Card | Possible Moves |
 | ------------:|------|----------------|
@@ -39,3 +59,24 @@ The same principle also applies to the `validateSwitch` function.
 | 12 | queen | 12 |
 | 13 | king 👑 | 0, 13 |
 
+## Backend API
+
+There are three different quantities related to the game's state:
+
+- **GameData** contains information which is set before the game and remains the same during the course of the game. For example the order of the players.
+- **GameState** is defined during the game and includes quantities which vary during the game, e.g. the active player index.
+- **GamePhase** describes if the players are swapping cards, or playing cards / performing moves.
+
+## Tests
+ 
+### Backend
+
+Just run
+
+    npm test
+
+## Authentication
+
+For now, only [authentication through github](https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps) is supported. 
+
+For development, a [proxy server](https://github.com/prose/gatekeeper) is required to bypass *CORS* issues. 

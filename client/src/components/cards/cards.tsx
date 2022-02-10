@@ -8,13 +8,13 @@ import { BoomerDogSocket } from "../../api/socket-client";
  * Card.color takes values between 0 and 3
  */
 
-const testHand = [
-    { id: 0, value: 9, color: 1 },
-    { id: 1, value: 0 },
-    { id: 2, value: 2, color: 3 },
-    { id: 2, value: 2, color: 3 },
-    { id: 2, value: 2, color: 3 },
-    { id: 2, value: 2, color: 3 },
+const placeHolderCards = [
+    { id: 0, value: 14 },
+    { id: 0, value: 14 },
+    { id: 0, value: 14 },
+    { id: 0, value: 14 },
+    { id: 0, value: 14 },
+    { id: 0, value: 14 },
 ] as CardBase[];
 
 const COLOR_TO_FILE = ["S", "D", "H", "C"];
@@ -33,45 +33,54 @@ const VALUE_TO_FILE = [
     "J",
     "Q",
     "K",
+    "card_back",
 ];
 
 const cardToSvg = (card: CardBase) =>
     `/cards/${VALUE_TO_FILE[card.value]}${
-        card.color ? COLOR_TO_FILE[card.color] : ""
+        typeof card.color !== "undefined" ? COLOR_TO_FILE[card.color] : ""
     }.svg`;
 
 interface CardsProps {
     socket?: BoomerDogSocket;
+    hasStarted: boolean;
 }
-const Cards = ({ socket }: CardsProps) => {
-    const [hand, setHand] = React.useState(testHand);
-    const [selectedCard, setSelectedCard] = React.useState(10);
+const Cards = ({ socket, hasStarted }: CardsProps) => {
+    const [hand, setHand] =
+        React.useState<(CardBase | null)[]>(placeHolderCards);
 
     const cardClicked = (i: number) => {
-        selectedCard === i
-            ? socket && socket.emit("card:clicked", hand[selectedCard])
-            : setSelectedCard(i);
+        console.log("card clicked", Boolean(socket))
+        socket && socket.emit("card:clicked", i, (response: CardClickedResponse) => {});
     };
 
-    socket && socket.on("cards:update", (payload) => {
-        console.log("update cards")
-        setHand(payload);
-    })
+    socket &&
+        socket.on("cards:update", (payload) => {
+            console.log("update cards");
+            setHand(payload);
+        });
 
     return (
         <Flex mt={"1em"} justifyContent={"center"}>
-            {hand.map((card, i) => (
-                <AspectRatio key={i} w={60} ratio={5 / 7}>
-                    <chakra.img
-                        h={"20px"}
-                        // style={{height:"20px"}}
-                        // mt={i === selectedCard ? "1em" : "0em"}
-                        onClick={() => cardClicked(i)}
-                        // mx={1}
-                        src={cardToSvg(card)}
-                    />
-                </AspectRatio>
-            ))}
+            {hand.map(
+                (card, i) =>
+                    card && (
+                        <AspectRatio key={i} w={60} ratio={5 / 7}>
+                            <chakra.img
+                                h={"20px"}
+                                // style={{height:"20px"}}
+                                // mt={i === selectedCard ? "1em" : "0em"}
+                                onClick={() => cardClicked(i)}
+                                // mx={1}
+                                src={
+                                    hasStarted
+                                        ? cardToSvg(card)
+                                        : "/cards/card_back.svg"
+                                }
+                            />
+                        </AspectRatio>
+                    )
+            )}
         </Flex>
     );
 };

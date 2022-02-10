@@ -39,7 +39,9 @@ export default class Deck {
         }
 
         this.shuffleCards();
-        this.hands = Array(nPlayers).fill(Array(6).fill(null));
+        this.hands = Array.from({ length: nPlayers }, (e) =>
+            Array(6).fill(null)
+        );
     }
 
     /**
