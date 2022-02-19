@@ -1,0 +1,15 @@
+{
+  "name": "boomerdog-types",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./entry.js",
+  "types": "./entry.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^4.5.5"
+  }
+}

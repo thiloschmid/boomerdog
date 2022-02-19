@@ -40,6 +40,18 @@ In order to make a move, first the `validateMove` function has to be called. In 
 
 The same principle also applies to the `validateSwitch` function. 
 
+## PossibleMoves
+
+The possible moves are encoded in an $6 \times 4 \times x$ (cards $\times$ marbles $\times$ moves) array. 
+
+- If the card is a regular move card (e.g. a '3') the move contains the whole path of length 3 to the target node. For instance moving 3 with a marble at 20 yields [21, 22, 23]
+
+- If walking forward with a 7, 1000 is added, i.e. walking 3 forward with a 7 starting at 20 yields [1021, 1022, 1023]
+
+- Going out is [-1, player-specific out node]
+  
+- Swapping with a marble on node n is encoded as 300+n, i.e. swapping with a node at n=23 is [323]
+
 ## Cards
 
 | Value | Card | Possible Moves |

@@ -19,9 +19,7 @@ export const AuthContext = React.createContext({
 
 export const App = () => {
     const [state, dispatch] = React.useReducer(reducer, initialState);
-    // const [player, setPlayer] = useState<Player>();
-
-    // const [gameState, setGameState] = useState<GameState>({});
+    const [isConnected, setIsConnected] = React.useState(false);
 
     return (
         <AuthContext.Provider value={{ state, dispatch }}>
@@ -33,11 +31,18 @@ export const App = () => {
                             element={
                                 <Layout
                                     isLoggedIn={state.isLoggedIn}
+                                    isConnected={isConnected}
                                     loginElement={<Login />}
                                 >
                                     {state.isLoggedIn && state.user?.id && (
                                         // Here, sockets exist 🔥
-                                        <Game authToken={`${state.user.id}`} />
+                                        <Game
+                                            {...{
+                                                authToken: `${state.user.id}`,
+                                                isConnected,
+                                                setIsConnected,
+                                            }}
+                                        />
                                     )}
                                 </Layout>
                             }

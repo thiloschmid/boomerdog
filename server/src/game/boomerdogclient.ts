@@ -1,72 +1,249 @@
-import { GameBase } from "../../../types/game.js";
-import { Player } from "../../../types/user.js";
+import { GameData, GamePhase, GameState } from "../../../types/game.js";
+import { User } from "../../../types/user.js";
+import { io, userMap } from "../api/index.js";
+import { green, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";
 
-export default class BoomerDogClient extends BoomerDog {
-    gameInfo: GameBase;
-    userIdToIndex;
-    order;
-    constructor(uuid: string, gameName: string, nPlayers: number) {
+export default class BoomerDogHandler extends BoomerDog {
+    gameId: string;
+    gameName: string;
+    nPlayers: number;
+    players: User[];
+    hasStarted: boolean;
+
+    constructor(gameId: string, gameName: string, nPlayers: number) {
         super(nPlayers);
 
-        this.gameInfo = {
-            uuid: uuid,
-            gameName: gameName,
-            nPlayers: nPlayers,
-            players: new Array<Player>(),
-            hasStarted: false,
+        this.gameId = gameId;
+        this.gameName = gameName;
+        this.nPlayers = nPlayers;
+        this.players = new Array<User>();
+        this.hasStarted = false;
+    }
+
+    /* ☎️ EMITTER METHODS
+     * Emit game specific information. The optional argument userId specifies
+     * a particular recipient. If it is not specified, all players will
+     * receive the data.
+     */
+
+    emitGameData(userId?: string) {
+        // console.debug(yellow(`Emit game data`))
+        io.to(userId || this.gameId).emit(
+            "gamedata:update",
+            this.getGameData()
+        );
+    }
+
+    emitGameState(userId?: string) {
+        // console.debug(yellow(`Emit game state`))
+        io.to(userId || this.gameId).emit(
+            "gamestate:update",
+            this.getGameState()
+        );
+    }
+
+    emitBoardData(userId?: string) {
+        // console.debug(yellow(`Emit board data`))
+        io.to(userId || this.gameId).emit("board:update", super.getBoardData());
+    }
+
+    emitPossibleMoves() {
+        // this is only well defined after startTurn from the parent class has
+        // been called!
+        const activePlayer = this.getActivePlayer();
+        if (activePlayer && this.possibleMoves) {
+            // console.debug(yellow(`Emit possible moves`))
+            io.to(activePlayer.userId).emit(
+                "moves:update",
+                super.getPossibleMoves()
+            );
+        }
+    }
+
+    emitCards(userId?: string) {
+        for (let p = 0; p < this.players.length; p++) {
+            // send always if userId is not defined
+            // if userId is defined, only send to that particular userId
+            (!userId || userId === this.players[p].userId) &&
+                io
+                    .to(this.players[p].userId)
+                    .emit("cards:update", super.getPlayerCards(p));
+        }
+    }
+
+    /* 💦 get data */
+
+    getGameData(): GameData {
+        return {
+            gameId: this.gameId,
+            gameName: this.gameName,
+            nPlayers: this.nPlayers,
+            players: this.players,
+            hasStarted: this.hasStarted,
+        };
+    }
+
+    getGameState(): GameState {
+        const activePlayer = this.getActivePlayer();
+
+        const gameState: GameState = {
+            gamePhase: this.gamePhase,
+            numberOfDistributedCards: 6 - (this.roundNumber % 5),
+            activePlayerUserId: activePlayer ? activePlayer.userId : "",
+            stack: this.deck.stack,
         };
 
-        this.order = [...Array(nPlayers).keys()]; // defaults to [0, 1, ... , nPlayers-1]
-        this.userIdToIndex = new Map<string, number>();
+        if (this.gamePhase === GamePhase.WaitingForSevenMove) {
+            gameState.remainingMoves = this.remainderForSevenCard;
+        }
+
+        return gameState;
     }
 
-    /**
-     *
-     * @param userId The user id
-     * @returns The index with respect to the underlying BoomerDog instance.
-     */
-    getPlayerIndex(userId: string) {
-        const index = this.userIdToIndex.get(userId);
-        if (typeof index === "undefined") return null;
-        return this.order[index];
+    getActivePlayer() {
+        if (this.activePlayerIndex < this.players.length) {
+            return this.players[this.activePlayerIndex];
+        }
+        // AI player
+        return null;
     }
 
-    playerJoin(player: Player) {
+    /* 👋 Handle player joining etc. */
+
+    playerJoin(user: User) {
         // check if the game is full
-        if (this.gameInfo.players.length >= this.gameInfo.nPlayers) {
-            return "The game is full";
+        if (this.players.length >= this.nPlayers) {
+            return { status: 1, message: "The game is full" };
         }
 
         // check if the player is already in the game
-        if (
-            this.gameInfo.players
-                .map((player) => player.uuid)
-                .includes(player.uuid)
-        ) {
-            return "Player is already in the game";
+        if (this.players.map((player) => player.userId).includes(user.userId)) {
+            return { status: 1, message: "Player is already in the game" };
         }
 
-        this.gameInfo.players.push(player);
-        this.userIdToIndex.set(player.uuid, this.gameInfo.players.length);
-        return "";
+        user.gameId = this.gameId;
+        this.players.push(user);
+
+        return { status: 0 };
     }
 
-    getPlayerCardsByUserId(userId: string) {
-        const index = this.getPlayerIndex(userId);
+    playerQuit(user: User) {}
 
-        if (index === null) {
-            return [];
+    startGame() {
+        if (this.hasStarted) {
+            return { status: 1, message: "Game has already started" };
         }
-        return super.getPlayerCards(index);
+        super.startGame();
+        this.hasStarted = true;
+
+        this.emitBoardData();
+        this.emitGameData();
+        this.emitGameState();
+        this.startRound();
     }
 
-    getGameData() {
-        return { ...this.gameInfo, order: this.order };
+    /* ⚽ handle gameplay */
+
+    startRound() {
+        super.setupRound();
+
+        this.emitCards();
+        this.startTurn();
     }
 
-    setupGame() {
-        super.setupGame();
-        this.gameInfo.hasStarted = true;
+    startTurn() {
+        super.setupTurn(); // this sets the possible moves
+        const activePlayer = this.getActivePlayer();
+        if (activePlayer) {
+            this.emitPossibleMoves();
+            console.log(`${green(`${activePlayer.name}'s turn`)}`);
+        } else {
+            // AI opponent
+            console.log(`${green(`AI ${this.activePlayerIndex} folding`)}`);
+            super.fold();
+            this.endTurn();
+        }
+    }
+
+    endTurn() {
+        super.finalizeTurn();
+
+        if (super.gameIsFinished()) {
+            // never happens
+        }
+        if (super.roundIsFinished()) {
+            this.endRound();
+            return;
+        }
+        super.moveToNextPlayer();
+        this.startTurn();
+    }
+
+    endRound() {
+        super.finalizeRound();
+        this.startRound();
+    }
+
+    playerPerformsMove(userId: string, c: number, m: number, mi: number) {
+        const activePlayer = this.getActivePlayer();
+        if (userId !== activePlayer?.userId) {
+            return {
+                status: 1,
+                message: `It is not player ${activePlayer?.name}'s turn`,
+            };
+        }
+        if (this.deck.hands[this.activePlayerIndex][c] === null) {
+            return {
+                status: 1,
+                message: `Card does not exist`,
+            };
+        }
+        if (!this.possibleMoves[c][m][mi]) {
+            return {
+                status: 1,
+                message: `Move is empty`,
+            };
+        }
+
+        const response = super.performMove(c, m, mi);
+
+        if (!response.status) {
+            this.emitCards(activePlayer.userId);
+            this.emitBoardData();
+            this.emitGameState();
+
+            if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+                // only end the turn when not waiting for the seven moves to
+                // complete
+                this.endTurn();
+            }
+        } else if (response.status === 7) {
+            this.emitCards(activePlayer.userId);
+            this.emitBoardData();
+            this.emitGameState();
+            this.emitPossibleMoves();
+        }
+
+        return response;
+    }
+
+    playerFolds(userId: string) {
+        const activePlayer = this.getActivePlayer();
+        if (userId !== activePlayer?.userId) {
+            return {
+                status: 1,
+                message: `It is not player ${userId}'s turn`,
+            };
+        }
+        super.fold();
+
+        this.emitCards(activePlayer.userId);
+        this.emitBoardData();
+        this.emitGameState();
+
+        this.endTurn();
+
+        return { status: 0 };
     }
 }

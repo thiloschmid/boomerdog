@@ -1,9 +1,17 @@
-import { CardBase } from "../../../types/game";
-import Board, { MoveValidation } from "./board";
-import Deck from "./deck";
+import { CardMoves, GamePhase } from "../../../types/game.js";
+import { blue } from "../api/utils/colors.js";
+import Board, { SEVEN_MOVE_OFFSET } from "./board.js";
+import Deck from "./deck.js";
 
-const POSSIBLE_MOVES = [
-    [0, 1, 2, 3, 4, -4, 5, 6, 71, 72, 73, 74, 75, 76, 77, 8, 9, 10, 11, 12, 13, 14], // joker
+// imports for jest
+// import Board, {MoveValidation} from "./board"
+// import Deck from "./deck";
+
+const CARD_OPTIONS = [
+    [
+        0, 1, 2, 3, 4, -4, 5, 6, 71, 72, 73, 74, 75, 76, 77, 8, 9, 10, 11, 12,
+        13, 14,
+    ], // joker
     [0, 1, 11], // ace
     [2],
     [3],
@@ -20,16 +28,97 @@ const POSSIBLE_MOVES = [
 ];
 
 export default class BoomerDog {
+    nPlayers;
     board;
     deck;
 
+    activePlayerIndex: number;
+
+    possibleMoves: CardMoves[];
+
+    gamePhase: GamePhase;
+    roundNumber: number;
+
+    // initially true, becomes false after folding or playing all cards
+    isPlaying: boolean[];
+
+    // store the distance that was moved with a seven card
+    remainderForSevenCard;
+
     constructor(nPlayers: number) {
+        this.nPlayers = nPlayers;
         this.board = new Board(nPlayers);
         this.deck = new Deck(nPlayers);
+
+        this.possibleMoves = Array.from({ length: 6 }, (e) => [[], [], [], []]);
+
+        this.activePlayerIndex = 0;
+        this.gamePhase = GamePhase.Waiting;
+        this.roundNumber = 0;
+
+        this.isPlaying = [true, true, true, true];
+
+        this.remainderForSevenCard = 7;
     }
 
-    setupGame() {
-        this.deck.distributeCards(6);
+    startGame() {
+        if (this.gamePhase === GamePhase.Waiting) {
+            this.gamePhase = GamePhase.Playing;
+        }
+    }
+
+    setupRound() {
+        console.debug(`${blue(`Round ${this.roundNumber} started`)}`);
+        // first distribute 6 cards, then 5, ..., down to 2 cards
+        this.deck.distributeCards(6 - (this.roundNumber % 5));
+        this.activePlayerIndex = this.roundNumber % 4;
+        this.isPlaying = [true, true, true, true];
+    }
+
+    setupTurn() {
+        console.debug(`${blue(`Player ${this.activePlayerIndex}'s turn`)}`);
+        this.possibleMoves = this.collectPossibleMoves();
+    }
+
+    roundIsFinished() {
+        return !this.isPlaying.includes(true);
+    }
+
+    gameIsFinished() {
+        return false; // the game never finishes lol 🏁
+    }
+
+    moveToNextPlayer() {
+        if (this.remainderForSevenCard !== 7) {
+            console.error(
+                `Cannot move to next player. The seven card is not completed!`
+            );
+            return;
+        }
+        if (this.roundIsFinished()) {
+            console.warn(`Cannot move to next player. The round is finished!`);
+            return;
+        }
+
+        do {
+            this.activePlayerIndex = ++this.activePlayerIndex % this.nPlayers;
+        } while (!this.isPlaying[this.activePlayerIndex]);
+    }
+
+    finalizeTurn() {
+        console.debug(
+            `${blue(`Player ${this.activePlayerIndex}'s turn ended`)}`
+        );
+        // check if the player still has cards left
+        if (!this.deck.playerHasCards(this.activePlayerIndex)) {
+            this.isPlaying[this.activePlayerIndex] = false;
+        }
+    }
+
+    finalizeRound() {
+        this.roundNumber++;
+        // set new game phase
+        // this.gamePhase = GamePhase.Swapping;
     }
 
     getPlayerCards(p: number) {
@@ -40,81 +129,134 @@ export default class BoomerDog {
         return this.board.getBoardData();
     }
 
-    getAllMoves(p: number) {
-        return this.deck.hands[p].map((card) =>
-            card
-                ? this.board.marbleLocations[p].map((n) =>
-                      POSSIBLE_MOVES[card.value].flatMap((move) =>
-                          this.board.getPossibleDestinations(p, n, move)
+    /**
+     * If the card is a regular move card (e.g. a '3') the move contains the
+     * whole path of length 3 to the target node. For instance moving 3 with
+     * a marble at 20 yields [21, 22, 23]
+     *
+     * If walking forward with a 7, 100 is added, i.e. walking 3 forward with
+     * a 7 starting at 20 yields [121, 122, 123]
+     *
+     * Going out is [-1, player-specific out node]
+     *
+     * Swapping with a marble on node n is encoded as 200+n, i.e. swapping with
+     * a node at n=23 is [223]
+     *
+     * @returns An array of moves for each combination of cards and marbles.
+     *
+     */
+    collectPossibleMoves() {
+        return this.deck.hands[this.activePlayerIndex].map((card) => {
+            if (card === null) {
+                return [[], [], [], []];
+            } else if (
+                card.value === 7 &&
+                !this.board.playerCanCompleteSeven(this.activePlayerIndex)
+            ) {
+                return [[], [], [], []];
+            }
+
+            return this.board.marbleLocations[this.activePlayerIndex].map((n) =>
+                CARD_OPTIONS[card.value].flatMap((move) =>
+                    this.board.getPossibleDestinations(
+                        this.activePlayerIndex,
+                        n,
+                        move
+                    )
+                )
+            );
+        });
+    }
+
+    collectRemainingMovesForSevenCard(c: number, remainder: number) {
+        const remainingCardOptions = CARD_OPTIONS[7].filter(
+            (co) => co - 70 <= remainder
+        );
+        return Array.from({ length: 6 }, (e, i) =>
+            i === c
+                ? this.board.marbleLocations[this.activePlayerIndex].map((n) =>
+                      remainingCardOptions.flatMap((move) =>
+                          this.board.getPossibleDestinations(
+                              this.activePlayerIndex,
+                              n,
+                              move
+                          )
                       )
                   )
-                : null
+                : [[], [], [], []]
         );
     }
 
-    performMove(
-        p: number,
-        m: number,
-        card: CardBase,
-        move: number,
-        nTarget: number | undefined,
-        mTarget: number | undefined,
-        enterEndzone: boolean | undefined
-    ) {
-        if (!POSSIBLE_MOVES[card.value].includes(move)) {
-            throw new Error("Card does not allow the specified move");
+    getPossibleMoves() {
+        return this.possibleMoves;
+    }
+
+    /**
+     *
+     * @param c - The card
+     * @param m - The marble
+     * @param mi - The move index
+     */
+    performMove(c: number, m: number, mi: number) {
+        const moves = this.possibleMoves[c][m];
+        console.log(
+            `${blue(
+                `Player ${this.activePlayerIndex} plays card ${
+                    this.deck.hands[this.activePlayerIndex][c]?.value
+                } and moves [${moves?.[mi]}]`
+            )}`
+        );
+
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+
+        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+            // this is always the case except if a seven move is performed and
+            // the card has already been played
+            this.deck.cardPlayed(this.activePlayerIndex, c);
         }
 
-        let validation: MoveValidation;
-        switch (move) {
-            // first handle regular moves
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case -4:
-            case 5:
-            case 6:
-            case 8:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-                validation = this.board.validateMove(p, m, move, enterEndzone);
-                break;
+        /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
+        if (moves[mi][0] >= SEVEN_MOVE_OFFSET) {
+            if (moves[mi].length > this.remainderForSevenCard) {
+                console.error("Invalid move, not enough moves left");
+                return {
+                    status: 1,
+                    message: "Invalid move, not enough moves left",
+                };
+            }
+            this.remainderForSevenCard -= moves[mi].length;
 
-            // handle going out
-            case 0:
-                validation = this.board.validateOut(p);
-                break;
+            if (this.remainderForSevenCard) {
+                this.gamePhase = GamePhase.WaitingForSevenMove;
+                this.collectRemainingMovesForSevenCard(
+                    c,
+                    this.remainderForSevenCard
+                );
 
-            // handle switcheroos
-            case 14:
-                if (!nTarget || !mTarget) {
-                    throw new Error("A second node needs to be specified");
-                }
-                validation = this.board.validateSwitch(p, m, nTarget, mTarget);
-                break;
-
-            case 71:
-            case 72:
-            case 73:
-            case 74:
-            case 75:
-            case 76:
-            case 77:
-                // TODO: check if the 7 moves can be completed
-                validation = this.board.validateMove(p, m, move);
-                break;
-            default:
-                validation = [false, "Invalid move"];
+                return { status: 0 };
+            } else {
+                this.gamePhase = GamePhase.Playing;
+                this.remainderForSevenCard = 7; // reset to previous value
+            }
         }
-        if (validation[0]) {
-            // callback to execute the move
-            validation[1]();
-        } else {
-            throw new Error(validation[1]);
+
+        // check if the player is finished playing
+        if (!this.deck.playerHasCards(this.activePlayerIndex)) {
+            this.isPlaying[this.activePlayerIndex] = false;
         }
+        return { status: 0 };
+    }
+
+    fold() {
+        if (this.remainderForSevenCard !== 7) {
+            return {
+                status: 1,
+                message: `Cannot fold before completing the seven moves`,
+            };
+        }
+        console.debug(`${blue(`Player ${this.activePlayerIndex} folds`)}`);
+        this.deck.fold(this.activePlayerIndex);
+        this.isPlaying[this.activePlayerIndex] = false;
+        return { status: 0 };
     }
 }

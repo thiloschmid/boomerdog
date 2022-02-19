@@ -25,6 +25,7 @@ import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
 import logo from "../images/blaze_icon.svg";
 import { ColorModeSwitcher } from "../ColorModeSwitcher";
 import { AuthContext } from "../App";
+import ConnectionIndicator from "./connection_indicator";
 
 const Links = ["Chats", "Leaderboard", "About"];
 
@@ -43,13 +44,13 @@ const NavLink = ({ children }: { children: React.ReactNode }) => (
     </Link>
 );
 
-export default function NavBar({
-    isLoggedIn,
-    loginElement,
-}: {
-    isLoggedIn: boolean;
+interface NavBarProps {
+    isLoggedIn: boolean; // logged in via github
+    isConnected: boolean; // connected to the socketio backend
     loginElement: JSX.Element;
-}) {
+}
+
+const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
     const { state, dispatch } = React.useContext(AuthContext);
     const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -91,6 +92,7 @@ export default function NavBar({
                             ))}
                         </HStack>
                     </HStack>
+                    <ConnectionIndicator {...{isConnected}} />
                     <Flex alignItems={"center"}>
                         {isLoggedIn ? (
                             <Button
@@ -141,4 +143,6 @@ export default function NavBar({
             </Box>
         </>
     );
-}
+};
+
+export default NavBar;

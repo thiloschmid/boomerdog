@@ -5,6 +5,7 @@ import NavBar from "./navbar";
 
 export interface LayoutProps {
     isLoggedIn: boolean;
+    isConnected:boolean;
     children: React.ReactNode;
     loginElement: JSX.Element;
 }
@@ -14,6 +15,7 @@ const Layout = (props: LayoutProps) => (
         <NavBar
             isLoggedIn={props.isLoggedIn}
             loginElement={props.loginElement}
+            isConnected={props.isConnected}
         />
         <Box
             position="relative"

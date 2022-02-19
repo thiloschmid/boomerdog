@@ -1,21 +1,13 @@
 import { AspectRatio, chakra, Flex } from "@chakra-ui/react";
 import * as React from "react";
-import { CardBase } from "../../../../types/game";
+import { CardBase } from "boomerdog-types/entry";
+import { CardClickedResponse } from "../../../../types/socketio";
 import { BoomerDogSocket } from "../../api/socket-client";
 
 /*
  * Card.value takes values between 0 and 13
  * Card.color takes values between 0 and 3
  */
-
-const placeHolderCards = [
-    { id: 0, value: 14 },
-    { id: 0, value: 14 },
-    { id: 0, value: 14 },
-    { id: 0, value: 14 },
-    { id: 0, value: 14 },
-    { id: 0, value: 14 },
-] as CardBase[];
 
 const COLOR_TO_FILE = ["S", "D", "H", "C"];
 const VALUE_TO_FILE = [
@@ -36,40 +28,42 @@ const VALUE_TO_FILE = [
     "card_back",
 ];
 
-const cardToSvg = (card: CardBase) =>
+export const cardToSvg = (card: CardBase) =>
     `/cards/${VALUE_TO_FILE[card.value]}${
         typeof card.color !== "undefined" ? COLOR_TO_FILE[card.color] : ""
     }.svg`;
 
 interface CardsProps {
+    cards: (CardBase | null)[];
+    selectedCard: number | null;
+    setSelectedCard: React.Dispatch<React.SetStateAction<number | null>>;
     socket?: BoomerDogSocket;
     hasStarted: boolean;
 }
-const Cards = ({ socket, hasStarted }: CardsProps) => {
-    const [hand, setHand] =
-        React.useState<(CardBase | null)[]>(placeHolderCards);
-
+const Cards = ({
+    cards,
+    hasStarted,
+    selectedCard,
+    setSelectedCard,
+}: CardsProps) => {
     const cardClicked = (i: number) => {
-        console.log("card clicked", Boolean(socket))
-        socket && socket.emit("card:clicked", i, (response: CardClickedResponse) => {});
+        if (selectedCard === i) {
+            setSelectedCard(null);
+        } else {
+            setSelectedCard(i);
+        }
     };
-
-    socket &&
-        socket.on("cards:update", (payload) => {
-            console.log("update cards");
-            setHand(payload);
-        });
 
     return (
         <Flex mt={"1em"} justifyContent={"center"}>
-            {hand.map(
+            {cards.map(
                 (card, i) =>
                     card && (
-                        <AspectRatio key={i} w={60} ratio={5 / 7}>
+                        <AspectRatio key={i} w={60} ratio={5 / 7} mb="2em">
                             <chakra.img
-                                h={"20px"}
+                                // h={"20px"}
                                 // style={{height:"20px"}}
-                                // mt={i === selectedCard ? "1em" : "0em"}
+                                mt={i === selectedCard ? "0em" : "1em"}
                                 onClick={() => cardClicked(i)}
                                 // mx={1}
                                 src={

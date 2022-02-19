@@ -8,9 +8,9 @@ export const registerUserHandler = (socket: ServerSocket) => {
         payload: undefined,
         callback: IoCallback<ReadUserIoResponse>
     ) => {
-        const uuid = socketIdToUserId.get(socket.id);
-        const player = uuid ? userMap.get(uuid) : undefined;
-        if (player?.uuid) {
+        const userId = socketIdToUserId.get(socket.id);
+        const player = userId ? userMap.get(userId) : undefined;
+        if (player?.userId) {
             callback({ status: 0, player });
         } else {
             callback({ status: 1, message: "User not found" });

@@ -22,16 +22,16 @@ import { Form, Formik, FormikHelpers } from "formik";
 
 import { BoomerDogSocket } from "../api/socket-client";
 import { CreateGameIoResponse } from "../../../types/socketio";
-import { Player } from "../../../types/user";
+import { User } from "../../../types/user";
 
 interface CreateGameDrawerProps {
     socket?: BoomerDogSocket;
-    player: Player;
+    player: User;
 }
 const CreateGameDrawer = ({ socket, player }: CreateGameDrawerProps) => {
     const { isOpen, onOpen, onClose } = useDisclosure();
     const initialValues = {
-        gameName: "",
+        gameName: `${player.name}'s game`,
     };
     const [nPlayers, setNPlayers] = React.useState("4");
     const btnRef = React.useRef(null);
@@ -40,14 +40,14 @@ const CreateGameDrawer = ({ socket, player }: CreateGameDrawerProps) => {
         values: typeof initialValues,
         helper: FormikHelpers<typeof initialValues>
     ) => {
-        player.uuid &&
+        player.userId &&
             socket &&
             socket.emit(
                 "game:create",
                 {
                     gameName: values.gameName,
                     nPlayers: parseInt(nPlayers),
-                    userId: player.uuid,
+                    userId: player.userId,
                 },
                 (response: CreateGameIoResponse) => {
                     if (!response.status) {

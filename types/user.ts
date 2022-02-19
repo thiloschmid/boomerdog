@@ -1,18 +1,12 @@
 export interface UserBase {
     name: string;
-    uuid: UserId;
-}
-
-// interface to be used on the frontend
-export interface Player extends UserBase {
-    gameId?: string | null;
+    userId: UserId;
 }
 
 // interface for users which are connected via socket.io
-export interface User extends Player {
-    socketId: string;
+export interface User extends UserBase {
+    gameId?: string;
 }
 
 export type SocketId = string;
 export type UserId = string;
-

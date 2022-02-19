@@ -1,5 +1,5 @@
-import { Player } from "./user";
-import { CardBase, GameBase, GameData, GameState } from "./game";
+import { User } from "./user";
+import { CardBase, CardMoves, GameData, GameState } from "./entry";
 
 /**
  * 0 : ok
@@ -19,35 +19,50 @@ export interface CreateGameIoResponse extends IoResponse {
 }
 
 export interface ReadUserIoResponse extends IoResponse {
-    player?: Player;
+    player?: User;
 }
+
+// export interface PerformMoveResponse extends IoResponse {
+
+// }
 
 export type IoCallback<T> = (response: T) => void;
 
-export interface CreateGamePayload {
-    gameName: string;
-    nPlayers: number;
+export interface UserIdentifierPayload {
     userId: string;
 }
 
-export interface JoinGamePayload {
+export interface GameIdentifierPayload {
     gameId: string;
-    userId: string;
+}
+
+export interface CreateGamePayload extends UserIdentifierPayload {
+    gameName: string;
+    nPlayers: number;
+}
+
+export interface PerformMovePayload
+    extends GameIdentifierPayload,
+        UserIdentifierPayload {
+    c: number;
+    m: number;
+    mi: number;
 }
 
 export interface ServerToClientEvents {
     // for the game browser
-    "games:update": (payload: GameBase[]) => void;
-    "user:update": (payload: Player) => void;
+    "games:update": (payload: GameData[]) => void;
+    "user:update": (payload: User) => void;
 
     // events relevant once in a game
     "gamedata:update": (payload: GameData) => void;
     "gamestate:update": (payload: GameState) => void;
     "board:update": (payload: number[][]) => void;
     "cards:update": (payload: (CardBase | null)[]) => void;
+    "moves:update": (payload: CardMoves[]) => void;
 }
 
-interface CardClickedResponse extends IoResponse {
+export interface CardClickedResponse extends IoResponse {
     possibleMoves: number[][][];
 }
 
@@ -67,7 +82,7 @@ export interface ClientToServerEvents {
         callback: IoCallback<CreateGameIoResponse>
     ) => void;
     "game:join": (
-        payload: JoinGamePayload,
+        payload: GameIdentifierPayload,
         callback: IoCallback<IoResponse>
     ) => void;
     "games:read": () => void;
@@ -76,8 +91,19 @@ export interface ClientToServerEvents {
         callback: IoCallback<IoResponse>
     ) => void;
 
+    "game:reconnect": (payload: GameIdentifierPayload) => void;
+
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
+
+    "game:perform_move": (
+        payload: PerformMovePayload,
+        callback: IoCallback<IoResponse>
+    ) => void;
+    "game:fold": (
+        payload: GameIdentifierPayload,
+        callback: IoCallback<IoResponse>
+    ) => void;
 
     "card:clicked": (
         payload: number,

@@ -2,10 +2,10 @@ import { CardBase } from "../../../../types/game";
 import { ServerSocket } from "../types.js";
 
 const testHand = [
-    { id: 0, value: 9, color: 1 },
-    { id: 1, value: 0 },
-    { id: 2, value: 2, color: 3 },
-    { id: 3, value: 11, color: 2 },
+    { cardId: 0, value: 9, color: 1 },
+    { cardId: 1, value: 0 },
+    { cardId: 2, value: 2, color: 3 },
+    { cardId: 3, value: 11, color: 2 },
 ] as CardBase[];
 
 export const registerCardHandler = (socket: ServerSocket) => {

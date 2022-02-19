@@ -1,79 +1,39 @@
-import { Server, Socket } from "socket.io";
 import { v4 as uuidv4 } from "uuid";
 
 import {
     CreateGameIoResponse,
     CreateGamePayload,
+    GameIdentifierPayload,
     IoCallback,
     IoResponse,
-    JoinGamePayload,
+    PerformMovePayload,
 } from "../../../../types/socketio.js";
 
 import BoomerDogClient from "../../game/boomerdogclient.js";
-import { SocketIoServer, ServerSocket } from "../types.js";
-import { Player, UserId } from "../../../../types/user.js";
-import {
-    io,
-    gamesMap,
-    getUserFromSocket,
-    userMap,
-    updateUser,
-} from "../index.js";
-import { CardBase } from "../../../../types/game.js";
-import { updateBoard } from "./board_handler.js";
+import { ServerSocket } from "../types.js";
+import { io, gamesMap, getUserFromSocket, updateUser } from "../index.js";
+import { yellow } from "../utils/colors.js";
 
-const testHand = [
-    { id: 0, value: 9, color: 1 },
-    { id: 1, value: 0 },
-    { id: 2, value: 2, color: 3 },
-    { id: 3, value: 11, color: 2 },
-] as CardBase[];
-
-export const updateCards = (gameId: string, userId: string) => {
-    const user = userMap.get(userId);
-    const game = gamesMap.get(gameId);
-    console.log(user && game && `emit to ${user.socketId}`);
-    // user && game && io.to(user.socketId).emit("cards:update", testHand); // game.getPlayerCards(userId));
-    game &&
-        user &&
-        io
-            .to(user.socketId)
-            .emit("cards:update", game.getPlayerCardsByUserId(userId));
+export const emitGameList = () => {
+    const gameList = Array.from(gamesMap.values()).map((value) =>
+        value.getGameData()
+    );
+    io.emit("games:update", gameList);
 };
-
-export const updateGameData = (gameId: string, socketId?: string) => {
-    const game = gamesMap.get(gameId);
-
-    // if socketId is supplied, send only to socketId, otherwise update all in the gameId room
-    game &&
-        io.to(socketId || gameId).emit("gamedata:update", game.getGameData());
-};
-
-export const updateGameState = (gameId: string, socketId?: string) => {};
 
 export const registerGameHandler = (socket: ServerSocket) => {
-    const emitGameList = (broadcast?: boolean) => {
-        // if no receiver specified, send to all connected clients
-        const destination = broadcast ? io : socket;
-
-        const gameList = Array.from(gamesMap.values()).map(
-            (value) => value.gameInfo
-        );
-        destination.emit("games:update", gameList);
-    };
-
     const createGame = (
-        { gameName, nPlayers, userId }: CreateGamePayload,
+        { gameName, nPlayers }: CreateGamePayload,
         callback: IoCallback<CreateGameIoResponse>
     ) => {
-        const player = userMap.get(userId);
+        const user = getUserFromSocket(socket);
 
-        if (!player) {
+        if (!user) {
             callback({ status: 1, message: "Player not found" });
             return;
         }
 
-        if (player.gameId) {
+        if (user.gameId) {
             callback({ status: 1, message: "Player is already in a game" });
             return;
         }
@@ -81,38 +41,39 @@ export const registerGameHandler = (socket: ServerSocket) => {
         const uuid = uuidv4(); // assign the game a unique id
         const game = new BoomerDogClient(uuid, gameName, nPlayers);
 
-        const response = game.playerJoin(player);
-        if (response) {
-            // something went wrong
-            callback({ status: 1, message: response });
-            return;
+        const response = game.playerJoin(user);
+
+        if (!response.status) {
+            gamesMap.set(uuid, game);
+            // join the game socket
+            socket.join(uuid);
+
+            // emit new game list and user data
+            emitGameList();
+            updateUser(user.userId);
+
+            // emit game specific data
+            game.emitGameData();
+            game.emitBoardData();
         }
-
-        player.gameId = uuid;
-        gamesMap.set(uuid, game);
-        emitGameList(true);
-        updateUser(userId);
-        socket.join(uuid);
-        updateGameData(uuid);
-
-        callback({ status: 0, gameId: uuid });
+        callback(response);
     };
 
     const joinGame = (
-        { gameId, userId }: JoinGamePayload,
+        { gameId }: GameIdentifierPayload,
         callback: IoCallback<IoResponse>
     ) => {
-        const player = userMap.get(userId);
+        const user = getUserFromSocket(socket);
 
-        if (!player) {
-            callback({ status: 1, message: "Player not found" });
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
             return;
         }
-        if (player.gameId) {
+        if (user.gameId) {
             callback({
                 status: 1,
                 message:
-                    player.gameId === gameId
+                    user.gameId === gameId
                         ? "Player is already in this game"
                         : "Player is already in another game",
             });
@@ -121,20 +82,26 @@ export const registerGameHandler = (socket: ServerSocket) => {
 
         const game = gamesMap.get(gameId);
 
-        const response = game ? game.playerJoin(player) : "Game not found";
-
-        if (response) {
-            // something went wrong
-            callback({ status: 1, message: response });
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
             return;
         }
 
-        player.gameId = gameId;
-        emitGameList(true);
-        updateUser(userId);
-        updateGameData(gameId);
-        updateBoard(gameId);
-        callback({ status: 0 });
+        const response = game.playerJoin(user);
+
+        if (!response.status) {
+            // join the game socket
+            socket.join(gameId);
+
+            // emit new game list and user data
+            emitGameList();
+            updateUser(user.userId);
+
+            // emit game specific data
+            game.emitGameData();
+            game.emitBoardData();
+        }
+        callback(response);
     };
 
     const startGame = (
@@ -156,23 +123,88 @@ export const registerGameHandler = (socket: ServerSocket) => {
             callback({ status: 1, message: "Game does not exist" });
             return;
         }
-        if (game.gameInfo.hasStarted) {
-            callback({ status: 1, message: "Game has already started" });
+
+        // perhaps check if successful to remove it from the game browser
+        return game.startGame();
+    };
+
+    const performMove = (
+        payload: PerformMovePayload,
+        callback: IoCallback<IoResponse>
+    ) => {
+        const game = gamesMap.get(payload.gameId);
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
             return;
         }
-
-        game.setupGame();
-        updateGameData(gameId);
-        updateBoard(gameId);
-        // updateGameState(uuid);
-        for (const player of game.gameInfo.players) {
-            updateCards(game.gameInfo.uuid, player.uuid);
+        const user = getUserFromSocket(socket);
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
         }
-        callback({ status: 0 });
+        const response = game.playerPerformsMove(
+            user.userId,
+            payload.c,
+            payload.m,
+            payload.mi
+        );
+
+        if (response.status) {
+            console.error(response.message);
+        }
+
+        callback(response);
+    };
+
+    const fold = (
+        payload: GameIdentifierPayload,
+        callback: IoCallback<IoResponse>
+    ) => {
+        const game = gamesMap.get(payload.gameId);
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+        const user = getUserFromSocket(socket);
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
+        }
+        const response = game.playerFolds(user.userId);
+
+        if (response.status) {
+            console.error(response.message);
+        }
+
+        callback(response);
+    };
+
+    const updatePlayerOnReconnect = ({ gameId }: { gameId: string }) => {
+        const user = getUserFromSocket(socket);
+        const game = gamesMap.get(gameId);
+        console.log(
+            yellow(
+                `Player ${user?.userId} tries to reconnect to ${gameId} = ${game?.gameId}`
+            )
+        );
+        if (user && game) {
+            game.emitGameData(user.userId);
+            if (game.hasStarted) {
+                game.emitGameState(user.userId);
+                game.emitCards(user.userId);
+                game.emitBoardData(user.userId);
+                if (game.getActivePlayer()?.userId === user.userId) {
+                    game.emitPossibleMoves();
+                }
+            }
+        }
     };
 
     socket.on("games:read", emitGameList);
     socket.on("game:create", createGame);
     socket.on("game:join", joinGame);
     socket.on("game:start", startGame);
+    socket.on("game:perform_move", performMove);
+    socket.on("game:fold", fold);
+    socket.on("game:reconnect", updatePlayerOnReconnect);
 };

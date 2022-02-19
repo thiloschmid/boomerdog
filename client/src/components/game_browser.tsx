@@ -1,17 +1,17 @@
 import { Button, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
 import * as React from "react";
-import { GameBase } from "../../../types/game";
-import { Player } from "../../../types/user";
+import { GameData } from "boomerdog-types/entry";
+import { User } from "../../../types/user";
 
 import CreateGameDrawer from "./create_game_drawer";
 import { BoomerDogSocket } from "../api/socket-client";
 
 interface GameBrowserProps {
     socket?: BoomerDogSocket;
-    player: Player;
+    player: User;
 }
 const GameBrowser = ({ socket, player }: GameBrowserProps) => {
-    const [games, setGames] = React.useState<GameBase[]>([]);
+    const [games, setGames] = React.useState<GameData[]>([]);
 
     React.useEffect(() => {
         if (socket) {
@@ -22,19 +22,15 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
         }
     }, [socket]);
 
-    const joinGame = (uuid: string) => {
+    const joinGame = (gameId: string) => {
         player &&
             socket &&
-            socket.emit(
-                "game:join",
-                { gameId: uuid, userId: player.uuid },
-                (response) => {
-                    if (!response.status) {
-                    } else {
-                        console.error(response.message);
-                    }
+            socket.emit("game:join", { gameId: gameId }, (response) => {
+                if (!response.status) {
+                } else {
+                    console.error(response.message);
                 }
-            );
+            });
     };
 
     return (
@@ -53,7 +49,9 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                     {games.map((g) => {
                         const isPlayersGame =
                             player &&
-                            g.players.map((p) => p.uuid).includes(player.uuid);
+                            g.players
+                                .map((p) => p.userId)
+                                .includes(player.userId);
                         return (
                             <Tr
                                 bg={isPlayersGame ? "cyan.100" : ""}
@@ -68,7 +66,7 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                                     {!isPlayersGame && (
                                         <Button
                                             onClick={() => {
-                                                joinGame(g.uuid);
+                                                joinGame(g.gameId);
                                             }}
                                         >
                                             Join

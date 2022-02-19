@@ -14,6 +14,7 @@ export default class Deck {
     hands: (CardBase | null)[][];
 
     currentCardIndex = 0;
+    stack: CardBase[] = [];
 
     /**
      * Populate the cards array and shuffle it.
@@ -27,13 +28,17 @@ export default class Deck {
                 // iterate over colors
                 for (let value = 1; value <= 13; value++) {
                     // iterate over possible values
-                    this.cards[id] = { id: id, color: color, value: value };
+                    this.cards[id] = {
+                        cardId: id,
+                        color: color,
+                        value: value,
+                    };
                     id++;
                 }
             }
             // add two jokers
             for (let j = 0; j < N_JOKERS; j++) {
-                this.cards[id] = { id: id, value: 0 };
+                this.cards[id] = { cardId: id, value: 0 };
                 id++;
             }
         }
@@ -63,6 +68,7 @@ export default class Deck {
                 if (this.currentCardIndex >= this.nCards) {
                     this.shuffleCards();
                     this.currentCardIndex = 0;
+                    this.stack = [];
                 }
                 this.hands[p][i] = this.cards[this.currentCardIndex];
                 this.currentCardIndex++;
@@ -70,18 +76,32 @@ export default class Deck {
         }
     }
 
-    playerHasCard(
-        p: number,
-        card: CardBase
-    ): [true, () => void] | [false, string] {
-        if (this.hands[p].includes(card)) {
-            return [true, () => this._playCard(p, card)];
+    cardPlayed(p: number, c: number) {
+        const card = this.hands[p][c];
+        if (card === null) {
+            console.error(`Card is null`);
+        } else {
+            this.stack.push(card);
+            this.hands[p][c] = null;
         }
-        return [false, `Player ${p} does not have that card.`];
     }
 
-    _playCard(p: number, card: CardBase) {
-        let i = this.hands[p].indexOf(card);
-        this.hands[p][i] = null;
+    fold(p: number) {
+        for (let i = 0; i < this.hands[p].length; i++) {
+            const card = this.hands[p][i];
+            if (card !== null) {
+                this.stack.push(card);
+                this.hands[p][i] = null;
+            }
+        }
+    }
+
+    playerHasCards(p: number) {
+        for (const card of this.hands[p]) {
+            if (card !== null) {
+                return true;
+            }
+        }
+        return false;
     }
 }
