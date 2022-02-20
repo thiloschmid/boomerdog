@@ -52,6 +52,7 @@ interface GameState {
 
 export {
     CardMoves,
+    MarbleMoves,
     CardBase,
     GameData,
     GamePhase,

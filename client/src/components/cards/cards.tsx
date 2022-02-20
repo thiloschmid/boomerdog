@@ -59,11 +59,10 @@ const Cards = ({
             {cards.map(
                 (card, i) =>
                     card && (
-                        <AspectRatio key={i} w={60} ratio={5 / 7} mb="2em">
+                        <AspectRatio key={i} w="60" maxW={"8em"} ratio={5 / 7} mb="2em">
                             <chakra.img
-                                // h={"20px"}
-                                // style={{height:"20px"}}
                                 mt={i === selectedCard ? "0em" : "1em"}
+                                cursor="pointer"
                                 onClick={() => cardClicked(i)}
                                 // mx={1}
                                 src={
@@ -71,6 +70,7 @@ const Cards = ({
                                         ? cardToSvg(card)
                                         : "/cards/card_back.svg"
                                 }
+                                objectFit="cover"
                             />
                         </AspectRatio>
                     )

@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Box, Button, Flex, Heading, HStack, Stack } from "@chakra-ui/react";
-import Console from "./connection_indicator";
 import GameBrowser from "./game_browser";
 import BoardWrapper from "./board/board_wrapper";
 import Cards from "./cards/cards";
@@ -95,6 +94,7 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
         socket.on("cards:update", (payload) => {
             console.log("cards updated", payload);
             setCards(payload);
+            setSelectedCard(null);
         });
         setSocket(socket);
     }, [state.user]);
@@ -105,15 +105,17 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
             socket.emit("game:reconnect", { gameId: player.gameId });
         }
     }, [socket, player]);
+
     return (
         <Box>
             {socket && player && (
                 <>
-                    <Console {...{ isConnected, player, socket }} />
-                    <GameBrowser {...{ socket, player }} />
+                    {(player.gameId && gameData && gameData.hasStarted) || (
+                        <GameBrowser {...{ socket, player }} />
+                    )}
                     {player.gameId && gameData && (
-                        <Stack>
-                            <Heading>{`${gameData.gameName} [${gameData.gameId}]`}</Heading>
+                        <Stack mt="1em">
+                            {/* <Heading>{`${gameData.gameName}`}</Heading> */}
                             <Flex>
                                 {!gameData.hasStarted && (
                                     <Button
@@ -132,10 +134,15 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
                                         gameId={gameData.gameId}
                                         socket={socket}
                                         nPlayers={4}
+                                        isActive={
+                                            gameState?.activePlayerUserId ===
+                                            player.userId
+                                        }
                                         playerIndex={gameData.players
                                             .map((p) => p.userId)
                                             .indexOf(player.userId)}
-                                        remainingMoves={
+                                        stepsRemaining={
+                                            // only relevant for the seven card
                                             // null if not defined or not relevant
                                             gameState?.gamePhase ===
                                             GamePhase.WaitingForSevenMove
@@ -144,20 +151,12 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
                                                 : null
                                         }
                                         selectedCard={selectedCard}
+                                        deselectCard={() =>
+                                            setSelectedCard(null)
+                                        }
                                         stack={gameState?.stack || []}
+                                        fold={fold}
                                     />
-                                    {gameState?.activePlayerUserId ===
-                                        player.userId && (
-                                        <Flex>
-                                            <Button
-                                                colorScheme="red"
-                                                m={5}
-                                                onClick={fold}
-                                            >
-                                                Fold
-                                            </Button>
-                                        </Flex>
-                                    )}
                                     <Cards
                                         cards={cards}
                                         selectedCard={selectedCard}

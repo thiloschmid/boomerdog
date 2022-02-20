@@ -29,5 +29,5 @@ interface GameState {
     stack: CardBase[];
     remainingMoves?: number;
 }
-export { CardMoves, CardBase, GameData, GamePhase, GameState, User, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
+export { CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, User, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
 //# sourceMappingURL=entry.d.ts.map

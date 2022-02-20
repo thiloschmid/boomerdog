@@ -19,8 +19,15 @@ import {
     useColorModeValue,
     Stack,
     Text,
+    useBreakpointValue,
+    Collapse,
 } from "@chakra-ui/react";
-import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
+import {
+    HamburgerIcon,
+    CloseIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+} from "@chakra-ui/icons";
 
 import logo from "../images/blaze_icon.svg";
 import { ColorModeSwitcher } from "../ColorModeSwitcher";
@@ -44,7 +51,7 @@ const NavLink = ({ children }: { children: React.ReactNode }) => (
     </Link>
 );
 
-interface NavBarProps {
+export interface NavBarProps {
     isLoggedIn: boolean; // logged in via github
     isConnected: boolean; // connected to the socketio backend
     loginElement: JSX.Element;
@@ -53,6 +60,7 @@ interface NavBarProps {
 const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
     const { state, dispatch } = React.useContext(AuthContext);
     const { isOpen, onOpen, onClose } = useDisclosure();
+    const collapseDisclosure = useDisclosure();
 
     const logout = () => {
         console.log("logout");
@@ -61,28 +69,53 @@ const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
 
     return (
         <>
-            <Box bg={useColorModeValue("gray.100", "gray.900")} px={4}>
-                <Flex
-                    h={16}
-                    alignItems={"center"}
-                    justifyContent={"space-between"}
-                >
-                    <IconButton
-                        size={"md"}
-                        icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
-                        aria-label={"Open Menu"}
-                        display={{ md: "none" }}
-                        onClick={isOpen ? onClose : onOpen}
-                    />
-                    <HStack spacing={8} alignItems={"center"}>
-                        <RouterLink to="/">
-                            <Box>
-                                <Image src={logo} w={50} />
+            <IconButton
+                size={"md"}
+                icon={
+                    collapseDisclosure.isOpen ? (
+                        <ChevronUpIcon w="2em" h="2em" />
+                    ) : (
+                        <ChevronDownIcon w="2em" h="2em" />
+                    )
+                }
+                aria-label={"Toggle Nav"}
+                onClick={collapseDisclosure.onToggle}
+                position={"absolute"}
+                left="1em"
+                top="1em"
+                zIndex={1000}
+            />
+            <Collapse in={collapseDisclosure.isOpen} animateOpacity>
+                <Box bg={useColorModeValue("gray.100", "gray.900")} px={4}>
+                    <Flex
+                        h={16}
+                        alignItems={"center"}
+                        justifyContent={"space-between"}
+                    >
+                        <IconButton
+                            size={"md"}
+                            icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
+                            aria-label={"Open Menu"}
+                            display={{ md: "none" }}
+                            onClick={isOpen ? onClose : onOpen}
+                        />
+                        <HStack spacing={2} alignItems={"center"}>
+                            <Box
+                                // mr={{ base: "0", md: "1em" }}
+                                mr={0}
+                                ml={"4em"}
+                            >
+                                <Image
+                                    src={logo}
+                                    w={{ base: "2em", md: "3em" }}
+                                />
                             </Box>
-                        </RouterLink>
-
-                        <Heading color="cyan.800">BoomerDog</Heading>
-                        <HStack
+                            {useBreakpointValue({ base: false, md: true }) && (
+                                <Heading p={0} m={0} color="cyan.700">
+                                    Boomer Dog
+                                </Heading>
+                            )}
+                            {/* <HStack
                             as={"nav"}
                             spacing={4}
                             display={{ base: "none", md: "flex" }}
@@ -90,57 +123,77 @@ const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
                             {Links.map((link) => (
                                 <NavLink key={link}>{link}</NavLink>
                             ))}
+                        </HStack> */}
                         </HStack>
-                    </HStack>
-                    <ConnectionIndicator {...{isConnected}} />
-                    <Flex alignItems={"center"}>
-                        {isLoggedIn ? (
-                            <Button
-                                onClick={logout}
-                                variant="solid"
-                                colorScheme={"red"}
-                                mr={4}
+                        <Flex alignItems="center">
+                            <Flex
+                                alignItems={"center"}
+                                display={{ base: "none", md: "flex" }}
                             >
-                                Logout
-                            </Button>
-                        ) : (
-                            loginElement
-                        )}
-                        <Menu>
-                            <MenuButton
-                                as={Button}
-                                rounded={"full"}
-                                variant={"link"}
-                                cursor={"pointer"}
-                                minW={0}
-                            ></MenuButton>
-                            <Text mx={2}>{state.user?.name}</Text>
-                            <Avatar
-                                // size={"sm"}
-                                src={state.user?.avatar_url}
+                                <ConnectionIndicator {...{ isConnected }} />
+                                {isLoggedIn ? (
+                                    <Button
+                                        onClick={logout}
+                                        variant="solid"
+                                        colorScheme={"red"}
+                                        mr={4}
+                                    >
+                                        Logout
+                                    </Button>
+                                ) : (
+                                    loginElement
+                                )}
+                                <Menu>
+                                    <MenuButton
+                                        as={Button}
+                                        rounded={"full"}
+                                        variant={"link"}
+                                        cursor={"pointer"}
+                                        minW={0}
+                                    ></MenuButton>
+                                    <Text mx={2}>{state.user?.name}</Text>
+                                    <Avatar
+                                        // size={"sm"}
+                                        src={state.user?.avatar_url}
+                                    />
+                                    <MenuList>
+                                        <MenuItem>Link 1</MenuItem>
+                                        <MenuItem>Link 2</MenuItem>
+                                        <MenuDivider />
+                                        <MenuItem>Link 3</MenuItem>
+                                    </MenuList>
+                                </Menu>
+                            </Flex>
+                            <ColorModeSwitcher
+                                ml="1em"
+                                justifySelf="flex-end"
                             />
-                            <MenuList>
-                                <MenuItem>Link 1</MenuItem>
-                                <MenuItem>Link 2</MenuItem>
-                                <MenuDivider />
-                                <MenuItem>Link 3</MenuItem>
-                            </MenuList>
-                        </Menu>
-
-                        <ColorModeSwitcher justifySelf="flex-end" />
+                        </Flex>
                     </Flex>
-                </Flex>
 
-                {isOpen ? (
-                    <Box pb={4} display={{ md: "none" }}>
-                        <Stack as={"nav"} spacing={4}>
-                            {Links.map((link) => (
-                                <NavLink key={link}>{link}</NavLink>
-                            ))}
-                        </Stack>
-                    </Box>
-                ) : null}
-            </Box>
+                    {isOpen ? (
+                        <Box pb={4} display={{ md: "none" }}>
+                            <Stack as={"nav"} spacing={4}>
+                                {Links.map((link) => (
+                                    <NavLink key={link}>{link}</NavLink>
+                                ))}
+                                {isLoggedIn ? (
+                                    <Button
+                                        onClick={logout}
+                                        variant="solid"
+                                        colorScheme={"red"}
+                                        mr={4}
+                                    >
+                                        Logout
+                                    </Button>
+                                ) : (
+                                    loginElement
+                                )}
+                            </Stack>
+                        </Box>
+                    ) : null}
+                </Box>
+            </Collapse>
         </>
     );
 };

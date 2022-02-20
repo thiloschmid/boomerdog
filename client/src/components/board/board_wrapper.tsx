@@ -1,6 +1,6 @@
 import * as React from "react";
 import { CardBase, CardMoves } from "boomerdog-types/entry";
-import { IoResponse } from "../../../../types/socketio";
+import { IoResponse, MarbleMoves } from "boomerdog-types";
 
 import { BoomerDogSocket } from "../../api/socket-client";
 import Board from "./board";
@@ -16,26 +16,38 @@ interface BoardWrapperProps {
     gameId: string;
     socket?: BoomerDogSocket;
     nPlayers: number;
+    isActive: boolean;
     playerIndex: number;
-    remainingMoves: number | null; // only relevant for the 7️⃣ card
+    stepsRemaining: number | null; // only relevant for the 7️⃣ card
     selectedCard: number | null;
+    deselectCard: () => void;
     stack: CardBase[];
+    fold: () => void;
 }
 const BoardWrapper = ({
     userId,
     gameId,
     socket,
     nPlayers,
+    isActive,
     playerIndex,
-    remainingMoves,
     selectedCard,
+    deselectCard,
     stack,
+    stepsRemaining,
+    fold,
 }: BoardWrapperProps) => {
     const [possibleMoves, setPossibleMoves] = React.useState<CardMoves[]>([
         [[]],
         [[]],
         [[]],
         [[]],
+    ]);
+    const [remainingMoves, setRemainingMoves] = React.useState<MarbleMoves[]>([
+        [],
+        [],
+        [],
+        [],
     ]);
     const [marbleLocations, setMarbleLocations] = React.useState<number[][]>(
         placeHolderMarbleLocations
@@ -67,6 +79,21 @@ const BoardWrapper = ({
                 },
                 (response: IoResponse) => {
                     console.log(response);
+
+                    if(!response.status) {
+                        deselectCard()
+                    }
+                }
+            );
+    };
+
+    const moveRemaining = (m: number, mi: number) => {
+        socket &&
+            socket.emit(
+                "game:perform_remaining_move",
+                { userId: userId, gameId: gameId, m: m, mi: mi },
+                (response: IoResponse) => {
+                    console.log(response);
                 }
             );
     };
@@ -81,6 +108,10 @@ const BoardWrapper = ({
                 console.debug("update moves", payload);
                 setPossibleMoves(payload);
             });
+            socket.on("remaining_moves:update", (payload) => {
+                console.debug("update moves", payload);
+                setRemainingMoves(payload);
+            });
         }
     }, [socket, gameId]);
 
@@ -91,12 +122,16 @@ const BoardWrapper = ({
                 possibleMoves,
                 selectedCard,
                 nPlayers,
+                isActive,
                 playerIndex,
                 onNodeClick,
                 onMarbleClick,
+                stepsRemaining,
                 remainingMoves,
-                moveSelected,
+                moveSelected, // move with the selected marble
+                moveRemaining, // move rest of the seven steps 7️⃣
                 stack,
+                fold,
             }}
         />
     );

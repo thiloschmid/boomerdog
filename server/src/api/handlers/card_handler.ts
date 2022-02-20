@@ -1,4 +1,4 @@
-import { CardBase } from "../../../../types/game";
+import { CardBase } from "boomerdog-types";
 import { ServerSocket } from "../types.js";
 
 const testHand = [

@@ -4,28 +4,18 @@ import {
     keyframes,
     AspectRatio,
     Text,
-    Box,
-    Button,
-    Center,
     Flex,
+    Box,
     CloseButton,
-    Stack,
-} from "@chakra-ui/react";
-import {
-    Popover,
-    PopoverTrigger,
-    PopoverContent,
-    PopoverHeader,
-    PopoverBody,
-    PopoverFooter,
-    PopoverArrow,
-    PopoverCloseButton,
-    PopoverAnchor,
+    useColorModeValue,
+    Button,
 } from "@chakra-ui/react";
 
 import { cardToSvg } from "../cards/cards";
 import { boardNodes } from "./board_data";
-import { CardMoves, CardBase } from "boomerdog-types/entry";
+import BoomerdogAvatar, { avatarSize } from "./avatar";
+import { CardMoves, CardBase, MarbleMoves } from "boomerdog-types";
+import Popup from "./popup";
 
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
 // the node index
@@ -33,10 +23,20 @@ const SEVEN_MOVE_OFFSET = 1000;
 const SWAP_MOVE_OFFSET = 300; // same for swaps
 
 const RADIUS = { inner: 12, outer: 20 };
-const BOARD_SIZE = { height: 800, width: 800 };
+export const BOARD_SIZE = { height: 800, width: 800 };
 const STROKE_WIDTH = ".2em";
-const NODE_COLOR = "gray.600";
+const NODE_COLORS = ["gray.600", "gray.200"];
 const SELECTION_COLOR = "teal.400";
+
+const avatarPositions = [
+    { x: BOARD_SIZE.width - avatarSize - 10, y: 10 },
+    { x: 10, y: 10 },
+    { x: 10, y: BOARD_SIZE.height - avatarSize - 10 },
+    {
+        x: BOARD_SIZE.width - avatarSize - 10,
+        y: BOARD_SIZE.height - avatarSize - 10,
+    },
+];
 
 const COLORS = ["red", "yellow.400", "green.600", "blue.600"];
 
@@ -60,22 +60,28 @@ export interface BoardProps {
     possibleMoves: CardMoves[];
     selectedCard: number | null;
     nPlayers: number;
+    isActive: boolean;
     playerIndex: number;
-    remainingMoves: number | null; // only relevant for the 7️⃣ card
+    stepsRemaining: number | null; // only relevant for the 7️⃣ card
+    remainingMoves: MarbleMoves[];
     onNodeClick: (n: number) => void;
     onMarbleClick: (m: number) => void;
     moveSelected: (m: number, t: number) => void;
+    moveRemaining: (m: number, t: number) => void;
+    fold: () => void;
 }
 const Board = ({
     marbleLocations,
     stack,
     possibleMoves,
     selectedCard,
-    nPlayers,
+    isActive,
     playerIndex,
-    onNodeClick,
-    onMarbleClick,
     moveSelected,
+    stepsRemaining,
+    moveRemaining,
+    remainingMoves,
+    fold,
 }: BoardProps) => {
     const [popoverIsOpen, setPopoverIsOpen] = React.useState(false);
     const [expandCards, setExpandCards] = React.useState(false);
@@ -90,16 +96,27 @@ const Board = ({
 
     const nodeClicked = (n: number) => {};
     const marbleClicked = (m: number) => {
-        if (selectedCard !== null) {
-            console.log(`marble ${m} clicked`);
-
-            if (possibleMoves[selectedCard][m].length > 1) {
+        if (stepsRemaining) {
+            // handle seven card
+            if (remainingMoves[m].length > 1) {
                 setPopoverIsOpen(true);
                 setSelectedMarble(m);
-            } else if (possibleMoves[selectedCard][m][0]) {
-                moveSelected(m, 0);
+            } else if (remainingMoves[m][0]) {
+                moveRemaining(m, 0);
                 setShowMove(null);
                 setSelectedMarble(null);
+            }
+        } else {
+            // handle regular moves
+            if (selectedCard !== null) {
+                if (possibleMoves[selectedCard][m].length > 1) {
+                    setPopoverIsOpen(true);
+                    setSelectedMarble(m);
+                } else if (possibleMoves[selectedCard][m][0]) {
+                    moveSelected(m, 0);
+                    setShowMove(null);
+                    setSelectedMarble(null);
+                }
             }
         }
     };
@@ -107,7 +124,13 @@ const Board = ({
     const targetClicked = (t: number) => {
         console.log(`target ${t} clicked`);
         if (selectedMarble !== null) {
-            moveSelected(selectedMarble, t);
+            if (stepsRemaining) {
+                // move the rest of the steps 7️⃣
+                moveRemaining(selectedMarble, t);
+            } else {
+                // move normally
+                moveSelected(selectedMarble, t);
+            }
             setPopoverIsOpen(false);
             setShowMove(null);
             setSelectedMarble(null);
@@ -119,7 +142,7 @@ const Board = ({
         // player 4 means unoccupied
         <chakra.circle
             onClick={() => nodeClicked(data.id)}
-            stroke={NODE_COLOR}
+            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
             strokeWidth={".3em"}
             fillOpacity="0"
             key={`${data.id}-${data.x} ${data.y}`}
@@ -200,7 +223,7 @@ const Board = ({
     }) => (
         <chakra.circle
             // stroke={COLORS[data.color]}
-            stroke={NODE_COLOR}
+            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
             strokeWidth={".3em"}
             fill="none"
             className="step"
@@ -218,7 +241,7 @@ const Board = ({
     }) => (
         <chakra.circle
             // stroke={COLORS[data.color]}
-            stroke={NODE_COLOR}
+            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
             strokeWidth={".3em"}
             fill="none"
             className="step"
@@ -319,115 +342,153 @@ const Board = ({
         );
     };
     return (
-        <Box position="relative" display="inline-block" w={800} h={800}>
-            <AspectRatio mt="0" maxW="1000px" ratio={1} bg="gray.100">
-                <svg viewBox={`0 0 ${BOARD_SIZE.height} ${BOARD_SIZE.width}`}>
-                    {/* build steps for the path around the board */}
-                    {boardNodes.nodes.map((data) => (
-                        <BoardNode
-                            key={`boardnode-${data.x}-${data.y}`}
-                            {...data}
-                        />
-                    ))}
-                    {/* draw homes */}
-                    {boardNodes.bases.map((data) => (
-                        <BaseNode
-                            key={`basenode-${data.x}-${data.y}`}
-                            {...data}
-                        />
-                    ))}
-                    {/* draw houses */}
-                    {boardNodes.endzones.map((data) => (
-                        <EndzoneNode
-                            key={`endzonenode-${data.x}-${data.y}`}
-                            {...data}
-                        />
-                    ))}
-                    {/* draw outer circles */}
-                    {boardNodes.outlines.map((data) => (
-                        <Outline
-                            key={`outlinenode-${data.x}-${data.y}`}
-                            {...data}
-                        />
-                    ))}
-                    {marbleLocations.map((nodes, p) =>
-                        nodes.map((n, m) => (
-                            <OccupiedNode
-                                key={`${p} ${m}`}
-                                {...{
-                                    ...getCoords(n, p, m),
-                                    color: p,
-                                    p: p,
-                                    m: m,
-                                }}
+        <Box>
+            <AspectRatio
+                mt="0"
+                mx="auto"
+                maxW="800px"
+                ratio={1}
+                bg={useColorModeValue("gray.100", "gray.700")}
+            >
+                <>
+                    <svg
+                        viewBox={`0 0 ${BOARD_SIZE.height} ${BOARD_SIZE.width}`}
+                    >
+                        {/* Place the players */}
+                        {avatarPositions.map((pos, i) => (
+                            <BoomerdogAvatar
+                                key={`avatar-${i}`}
+                                position={pos}
+                                isActive={i === playerIndex}
+                                color={COLORS[i]}
                             />
-                        ))
-                    )}
-                    {selectedCard !== null &&
-                        possibleMoves.length > selectedCard &&
-                        possibleMoves[selectedCard] !== null &&
-                        possibleMoves[selectedCard]!.map(
-                            (moves, m) =>
-                                (showMove === m || selectedMarble === m) &&
-                                moves !== null &&
-                                moves.map(
-                                    (move, i) => move && renderMove(move, i)
-                                )
-                        )}
+                        ))}
 
-                    {stack.map((card, i) =>
-                        i === stack.length - 1 ? (
-                            // render the top card
-                            <image
-                                href={cardToSvg(card)}
-                                cursor="pointer"
-                                onClick={() => setExpandCards(!expandCards)}
-                                x="340"
-                                y="316"
-                                width="120"
-                                height="168"
-                                key={`stack-card-${i}`}
+                        {/* build steps for the path around the board */}
+                        {boardNodes.nodes.map((data) => (
+                            <BoardNode
+                                key={`boardnode-${data.x}-${data.y}`}
+                                {...data}
                             />
-                        ) : (
-                            // render the remaining cards only if expanded
-                            expandCards && (
+                        ))}
+                        {/* draw homes */}
+                        {boardNodes.bases.map((data) => (
+                            <BaseNode
+                                key={`basenode-${data.x}-${data.y}`}
+                                {...data}
+                            />
+                        ))}
+                        {/* draw houses */}
+                        {boardNodes.endzones.map((data) => (
+                            <EndzoneNode
+                                key={`endzonenode-${data.x}-${data.y}`}
+                                {...data}
+                            />
+                        ))}
+                        {/* draw outer circles */}
+                        {boardNodes.outlines.map((data) => (
+                            <Outline
+                                key={`outlinenode-${data.x}-${data.y}`}
+                                {...data}
+                            />
+                        ))}
+                        {marbleLocations.map((nodes, p) =>
+                            nodes.map((n, m) => (
+                                <OccupiedNode
+                                    key={`${p} ${m}`}
+                                    {...{
+                                        ...getCoords(n, p, m),
+                                        color: p,
+                                        p: p,
+                                        m: m,
+                                    }}
+                                />
+                            ))
+                        )}
+                        {stepsRemaining
+                            ? remainingMoves.map(
+                                  (moves, m) =>
+                                      (showMove === m ||
+                                          selectedMarble === m) &&
+                                      moves !== null &&
+                                      moves.map(
+                                          (move, i) =>
+                                              move && renderMove(move, i)
+                                      )
+                              )
+                            : selectedCard !== null &&
+                              possibleMoves[selectedCard] !== null &&
+                              possibleMoves[selectedCard]!.map(
+                                  (moves, m) =>
+                                      (showMove === m ||
+                                          selectedMarble === m) &&
+                                      moves !== null &&
+                                      moves.map(
+                                          (move, i) =>
+                                              move && renderMove(move, i)
+                                      )
+                              )}
+
+                        {stack.map((card, i) =>
+                            i === stack.length - 1 ? (
+                                // render the top card
                                 <image
-                                    x={340 - 30 * (stack.length - 1 - i)}
+                                    href={cardToSvg(card)}
+                                    cursor="pointer"
+                                    onClick={() => setExpandCards(!expandCards)}
+                                    x="340"
                                     y="316"
                                     width="120"
                                     height="168"
-                                    href={cardToSvg(card)}
                                     key={`stack-card-${i}`}
                                 />
+                            ) : (
+                                // render the remaining cards only if expanded
+                                expandCards && (
+                                    <image
+                                        x={340 - 30 * (stack.length - 1 - i)}
+                                        y="316"
+                                        width="120"
+                                        height="168"
+                                        href={cardToSvg(card)}
+                                        key={`stack-card-${i}`}
+                                    />
+                                )
                             )
-                        )
-                    )}
-                </svg>
+                        )}
+                    </svg>
+                    <Box position="relative" pointerEvents="none">
+                        {stepsRemaining !== null && (
+                            <Popup
+                                top="1%"
+                                text={`Complete the remaining ${stepsRemaining} moves`}
+                            />
+                        )}
+                        {popoverIsOpen && (
+                            <Popup
+                                top="30%"
+                                text={`Select the target node`}
+                                close={() => {
+                                    setPopoverIsOpen(false);
+                                    setSelectedMarble(null);
+                                }}
+                            />
+                        )}
+                        {isActive && (
+                            <Button
+                                pointerEvents={"auto"}
+                                position="absolute"
+                                bottom="30%"
+                                colorScheme="red"
+                                m={0}
+                                onClick={fold}
+                            >
+                                Fold
+                            </Button>
+                        )}
+                    </Box>
+                </>
             </AspectRatio>
-            {popoverIsOpen && (
-                <Box
-                    borderRadius="md"
-                    p=".5em 1em"
-                    pr="2em"
-                    bg="white"
-                    pointerEvents="none"
-                    position="absolute"
-                    mx="auto"
-                    width="27%"
-                    top="0"
-                    left="0"
-                    right="0"
-                >
-                    <Text>Select the target node</Text>
-                    <CloseButton
-                        position="absolute"
-                        top="0"
-                        right="0"
-                        onClick={() => setPopoverIsOpen(false)}
-                        pointerEvents="auto"
-                    />
-                </Box>
-            )}
         </Box>
     );
 };

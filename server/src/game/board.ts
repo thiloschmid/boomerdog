@@ -379,8 +379,20 @@ export default class Board {
         // clear the old position
         this.nodes[nOld] = this.nPlayers;
 
-        // put the new marble into that position
-        this.nodes[move[move.length - 1]] = p;
+        const nNew = move[move.length - 1];
+
+        if (this.isRegularIndex(nNew)) {
+            // put the new marble into that position
+            this.nodes[nNew] = p;
+        } else {
+            // put the marble into the endzone
+            const endzoneIndex = this.indexToEndzoneIndex(nNew);
+            if (endzoneIndex) {
+                this.endzones[endzoneIndex[0]][endzoneIndex[1]] = true;
+            } else {
+                console.error(`Invalid index`);
+            }
+        }
 
         // update marbleLocations
         this.marbleLocations[p][m] = move[move.length - 1];

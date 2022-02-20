@@ -7,12 +7,13 @@ import {
     IoCallback,
     IoResponse,
     PerformMovePayload,
-} from "../../../../types/socketio.js";
+} from "boomerdog-types";
 
 import BoomerDogClient from "../../game/boomerdogclient.js";
 import { ServerSocket } from "../types.js";
 import { io, gamesMap, getUserFromSocket, updateUser } from "../index.js";
 import { yellow } from "../utils/colors.js";
+import { PerformRemainingMovePayload } from "boomerdog-types/socketio";
 
 export const emitGameList = () => {
     const gameList = Array.from(gamesMap.values()).map((value) =>
@@ -156,6 +157,32 @@ export const registerGameHandler = (socket: ServerSocket) => {
         callback(response);
     };
 
+    const performRemainingMove = (
+        payload: PerformRemainingMovePayload,
+        callback: IoCallback<IoResponse>
+    ) => {
+        const game = gamesMap.get(payload.gameId);
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+        const user = getUserFromSocket(socket);
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
+        }
+        const response = game.playerPerformsRemainingMove(
+            user.userId,
+            payload.m,
+            payload.mi
+        );
+        if (response.status) {
+            console.error(response.message);
+        }
+
+        callback(response);
+    };
+
     const fold = (
         payload: GameIdentifierPayload,
         callback: IoCallback<IoResponse>
@@ -195,6 +222,9 @@ export const registerGameHandler = (socket: ServerSocket) => {
                 game.emitBoardData(user.userId);
                 if (game.getActivePlayer()?.userId === user.userId) {
                     game.emitPossibleMoves();
+                    if (game.getGameState().remainingMoves) {
+                        game.emitRemainingMoves();
+                    }
                 }
             }
         }
@@ -205,6 +235,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
     socket.on("game:join", joinGame);
     socket.on("game:start", startGame);
     socket.on("game:perform_move", performMove);
+    socket.on("game:perform_remaining_move", performRemainingMove);
     socket.on("game:fold", fold);
     socket.on("game:reconnect", updatePlayerOnReconnect);
 };

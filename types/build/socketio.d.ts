@@ -1,5 +1,5 @@
 import { User } from "./user";
-import { CardBase, CardMoves, GameData, GameState } from "./entry";
+import { CardBase, CardMoves, GameData, GameState, MarbleMoves } from "./entry";
 /**
  * 0 : ok
  * 1 : not ok lol
@@ -33,6 +33,10 @@ export interface PerformMovePayload extends GameIdentifierPayload, UserIdentifie
     m: number;
     mi: number;
 }
+export interface PerformRemainingMovePayload extends GameIdentifierPayload, UserIdentifierPayload {
+    m: number;
+    mi: number;
+}
 export interface ServerToClientEvents {
     "games:update": (payload: GameData[]) => void;
     "user:update": (payload: User) => void;
@@ -41,6 +45,7 @@ export interface ServerToClientEvents {
     "board:update": (payload: number[][]) => void;
     "cards:update": (payload: (CardBase | null)[]) => void;
     "moves:update": (payload: CardMoves[]) => void;
+    "remaining_moves:update": (payload: MarbleMoves[]) => void;
 }
 export interface CardClickedResponse extends IoResponse {
     possibleMoves: number[][][];
@@ -60,6 +65,7 @@ export interface ClientToServerEvents {
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
     "game:perform_move": (payload: PerformMovePayload, callback: IoCallback<IoResponse>) => void;
+    "game:perform_remaining_move": (payload: PerformRemainingMovePayload, callback: IoCallback<IoResponse>) => void;
     "game:fold": (payload: GameIdentifierPayload, callback: IoCallback<IoResponse>) => void;
     "card:clicked": (payload: number, callback: IoCallback<CardClickedResponse>) => void;
 }

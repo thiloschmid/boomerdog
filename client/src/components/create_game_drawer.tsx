@@ -104,6 +104,7 @@ const CreateGameDrawer = ({ socket, player }: CreateGameDrawerProps) => {
                                             Game name
                                         </FormLabel>
                                         <Input
+                                            autoFocus
                                             id="gameName"
                                             name="gameName"
                                             value={values.gameName}

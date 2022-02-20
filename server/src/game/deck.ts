@@ -2,7 +2,7 @@
  * See the NOTES.md for a list of cards and the convention to label the moves.
  */
 
-import { CardBase } from "../../../types/game";
+import { CardBase } from "boomerdog-types";
 
 const N_JOKERS = 2;
 const N_DECKS = 2;

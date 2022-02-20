@@ -1,4 +1,4 @@
-import { GameData, GamePhase, GameState } from "../../../types/game.js";
+import { GameData, GamePhase, GameState } from "boomerdog-types";
 import { User } from "../../../types/user.js";
 import { io, userMap } from "../api/index.js";
 import { green, yellow } from "../api/utils/colors.js";
@@ -58,6 +58,18 @@ export default class BoomerDogHandler extends BoomerDog {
                 "moves:update",
                 super.getPossibleMoves()
             );
+        }
+    }
+
+    emitRemainingMoves() {
+        // emission if a seven is played and the seven moves are not completed
+        const activePlayer = this.getActivePlayer();
+        if (activePlayer) {
+            const remainingMoves = super.getRemainingMoves();
+            remainingMoves &&
+                io
+                    .to(activePlayer.userId)
+                    .emit("remaining_moves:update", remainingMoves);
         }
     }
 
@@ -213,7 +225,54 @@ export default class BoomerDogHandler extends BoomerDog {
             this.emitBoardData();
             this.emitGameState();
 
-            if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+            if (this.gamePhase === GamePhase.WaitingForSevenMove) {
+                this.emitRemainingMoves();
+            } else {
+                // only end the turn when not waiting for the seven moves to
+                // complete
+                this.endTurn();
+            }
+        } else if (response.status === 7) {
+            this.emitCards(activePlayer.userId);
+            this.emitBoardData();
+            this.emitGameState();
+            this.emitPossibleMoves();
+        }
+
+        return response;
+    }
+
+    playerPerformsRemainingMove(userId: string, m: number, mi: number) {
+        const activePlayer = this.getActivePlayer();
+        if (userId !== activePlayer?.userId) {
+            return {
+                status: 1,
+                message: `It is not player ${activePlayer?.name}'s turn`,
+            };
+        }
+        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+            return {
+                status: 1,
+                message: `Wrong call. Invalid request to complete the seven steps`,
+            };
+        }
+        if (!this.remainingMoves || !this.remainingMoves[m][mi]) {
+            return {
+                status: 1,
+                message: `Move is empty or undefined`,
+            };
+        }
+
+        const response = super.performRemainingMove(m, mi);
+
+        if (!response.status) {
+            this.emitCards(activePlayer.userId);
+            this.emitBoardData();
+            this.emitGameState();
+
+            if (this.gamePhase === GamePhase.WaitingForSevenMove) {
+                this.emitRemainingMoves();
+            } else {
                 // only end the turn when not waiting for the seven moves to
                 // complete
                 this.endTurn();

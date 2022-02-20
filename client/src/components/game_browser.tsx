@@ -1,4 +1,13 @@
-import { Button, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
+import {
+    Button,
+    Table,
+    Tbody,
+    Td,
+    Th,
+    Thead,
+    Tr,
+    useColorModeValue,
+} from "@chakra-ui/react";
 import * as React from "react";
 import { GameData } from "boomerdog-types/entry";
 import { User } from "../../../types/user";
@@ -12,6 +21,7 @@ interface GameBrowserProps {
 }
 const GameBrowser = ({ socket, player }: GameBrowserProps) => {
     const [games, setGames] = React.useState<GameData[]>([]);
+    const selectionColor = useColorModeValue("teal.100", "teal.700");
 
     React.useEffect(() => {
         if (socket) {
@@ -54,7 +64,7 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                                 .includes(player.userId);
                         return (
                             <Tr
-                                bg={isPlayersGame ? "cyan.100" : ""}
+                                bg={isPlayersGame ? selectionColor : ""}
                                 key={g.gameName}
                             >
                                 <Td>{g.gameName}</Td>

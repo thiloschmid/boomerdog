@@ -167,4 +167,6 @@ test("Check entering endzone", () => {
     console.log(board.getPossibleDestinations(0, 62, 5));
     board.setMarble(0, 0, 102);
     console.log(board.getPossibleDestinations(0, 62, 5));
+    board.setMarble(0, 1, 103)
+    console.log(board.isReachable(0, [63,0,100, 101, 102, 103]))
 });

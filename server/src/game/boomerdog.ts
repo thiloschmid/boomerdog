@@ -1,11 +1,8 @@
-import { CardMoves, GamePhase } from "../../../types/game.js";
 import { blue } from "../api/utils/colors.js";
 import Board, { SEVEN_MOVE_OFFSET } from "./board.js";
 import Deck from "./deck.js";
 
-// imports for jest
-// import Board, {MoveValidation} from "./board"
-// import Deck from "./deck";
+import { CardMoves, GamePhase, MarbleMoves } from "boomerdog-types";
 
 const CARD_OPTIONS = [
     [
@@ -44,6 +41,7 @@ export default class BoomerDog {
 
     // store the distance that was moved with a seven card
     remainderForSevenCard;
+    remainingMoves: MarbleMoves[] | null;
 
     constructor(nPlayers: number) {
         this.nPlayers = nPlayers;
@@ -51,6 +49,7 @@ export default class BoomerDog {
         this.deck = new Deck(nPlayers);
 
         this.possibleMoves = Array.from({ length: 6 }, (e) => [[], [], [], []]);
+        this.remainingMoves = null;
 
         this.activePlayerIndex = 0;
         this.gamePhase = GamePhase.Waiting;
@@ -77,7 +76,7 @@ export default class BoomerDog {
 
     setupTurn() {
         console.debug(`${blue(`Player ${this.activePlayerIndex}'s turn`)}`);
-        this.possibleMoves = this.collectPossibleMoves();
+        this.possibleMoves = this.computePossibleMoves();
     }
 
     roundIsFinished() {
@@ -145,7 +144,7 @@ export default class BoomerDog {
      * @returns An array of moves for each combination of cards and marbles.
      *
      */
-    collectPossibleMoves() {
+    computePossibleMoves() {
         return this.deck.hands[this.activePlayerIndex].map((card) => {
             if (card === null) {
                 return [[], [], [], []];
@@ -168,27 +167,29 @@ export default class BoomerDog {
         });
     }
 
-    collectRemainingMovesForSevenCard(c: number, remainder: number) {
+    getPossibleMoves() {
+        return this.possibleMoves;
+    }
+
+    computeRemainingMoves() {
         const remainingCardOptions = CARD_OPTIONS[7].filter(
-            (co) => co - 70 <= remainder
+            (co) => co - 70 <= this.remainderForSevenCard
         );
-        return Array.from({ length: 6 }, (e, i) =>
-            i === c
-                ? this.board.marbleLocations[this.activePlayerIndex].map((n) =>
-                      remainingCardOptions.flatMap((move) =>
-                          this.board.getPossibleDestinations(
-                              this.activePlayerIndex,
-                              n,
-                              move
-                          )
-                      )
-                  )
-                : [[], [], [], []]
+        this.remainingMoves = this.board.marbleLocations[
+            this.activePlayerIndex
+        ].map((n) =>
+            remainingCardOptions.flatMap((move) =>
+                this.board.getPossibleDestinations(
+                    this.activePlayerIndex,
+                    n,
+                    move
+                )
+            )
         );
     }
 
-    getPossibleMoves() {
-        return this.possibleMoves;
+    getRemainingMoves() {
+        return this.remainingMoves;
     }
 
     /**
@@ -228,16 +229,50 @@ export default class BoomerDog {
 
             if (this.remainderForSevenCard) {
                 this.gamePhase = GamePhase.WaitingForSevenMove;
-                this.collectRemainingMovesForSevenCard(
-                    c,
-                    this.remainderForSevenCard
-                );
+                this.computeRemainingMoves();
 
                 return { status: 0 };
             } else {
                 this.gamePhase = GamePhase.Playing;
                 this.remainderForSevenCard = 7; // reset to previous value
             }
+        }
+
+        // check if the player is finished playing
+        if (!this.deck.playerHasCards(this.activePlayerIndex)) {
+            this.isPlaying[this.activePlayerIndex] = false;
+        }
+        return { status: 0 };
+    }
+
+    performRemainingMove(m: number, mi: number) {
+        if (!this.remainingMoves) {
+            return { status: 1, message: "Remaining moves are not defined" };
+        }
+        const moves = this.remainingMoves[m];
+        console.log(
+            `${blue(`Player moves [${moves?.[mi]} from a seven card`)}`
+        );
+
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+
+        if (moves[mi].length > this.remainderForSevenCard) {
+            console.error("Invalid move, not enough moves left");
+            return {
+                status: 1,
+                message: "Invalid move, not enough moves left",
+            };
+        }
+        this.remainderForSevenCard -= moves[mi].length;
+
+        if (this.remainderForSevenCard) {
+            this.gamePhase = GamePhase.WaitingForSevenMove;
+            this.computeRemainingMoves();
+
+            return { status: 0 };
+        } else {
+            this.gamePhase = GamePhase.Playing;
+            this.remainderForSevenCard = 7; // reset to previous value
         }
 
         // check if the player is finished playing
