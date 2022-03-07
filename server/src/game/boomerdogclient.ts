@@ -1,11 +1,11 @@
 import {
+    User,
     GameData,
     GamePhase,
     GameState,
     CardMoves,
     MarbleMoves,
 } from "boomerdog-types";
-import { User } from "../../../types/user.js";
 import { io, userMap } from "../api/index.js";
 import { blue, green, red, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";

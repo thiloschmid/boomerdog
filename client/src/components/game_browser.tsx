@@ -10,8 +10,7 @@ import {
     useColorModeValue,
 } from "@chakra-ui/react";
 import * as React from "react";
-import { GameData } from "boomerdog-types/entry";
-import { User } from "../../../types/user";
+import { User, GameData } from "boomerdog-types";
 
 import CreateGameDrawer from "./create_game_drawer";
 import { BoomerDogSocket } from "../api/socket-client";

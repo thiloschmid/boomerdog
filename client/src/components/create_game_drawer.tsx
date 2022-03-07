@@ -21,8 +21,7 @@ import {
 import { Form, Formik, FormikHelpers } from "formik";
 
 import { BoomerDogSocket } from "../api/socket-client";
-import { CreateGameIoResponse } from "../../../types/socketio";
-import { User } from "../../../types/user";
+import { User, CreateGameIoResponse } from "boomerdog-types";
 
 interface CreateGameDrawerProps {
     socket?: BoomerDogSocket;

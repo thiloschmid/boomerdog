@@ -4,7 +4,7 @@ import {
     ServerToClientEvents,
     InterServerEvents,
     SocketData,
-} from "../../../types/socketio";
+} from "boomerdog-types";
 
 export type SocketIoServer = Server<
     ClientToServerEvents,

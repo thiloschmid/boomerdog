@@ -1,4 +1,4 @@
-import { User } from "./user";
+import { User, UserId } from "./user";
 import { IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload } from "./socketio";
 declare type Move = number[];
 declare type MarbleMoves = Move[];
@@ -31,5 +31,5 @@ interface GameState {
     hasSwapped: boolean[];
     remainingMoves?: number;
 }
-export { CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, User, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
+export { CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, User, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, UserId, };
 //# sourceMappingURL=entry.d.ts.map

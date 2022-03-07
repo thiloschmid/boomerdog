@@ -9,7 +9,7 @@ import { emitGameList, registerGameHandler } from "./handlers/game_handler.js";
 import { green, red, yellow } from "./utils/colors.js";
 // import { registerUserHandler } from "./handlers/user_handler.js";
 import { SocketIoServer, ServerSocket } from "./types.js";
-import { SocketId, UserId, User } from "../../../types/user.js";
+import { UserId, User } from "boomerdog-types";
 import { registerCardHandler } from "./handlers/card_handler.js";
 
 import BoomerDogClient from "../game/boomerdogclient.js";

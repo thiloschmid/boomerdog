@@ -1,4 +1,4 @@
-import { User } from "./user";
+import { User, UserId, SocketId } from "./user";
 import {
     IoResponse,
     AuthenticateUserIoResponse,
@@ -74,4 +74,5 @@ export {
     ServerToClientEvents,
     SocketData,
     UserIdentifierPayload,
+    UserId,
 };

@@ -1,9 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
-import {
-    ServerToClientEvents,
-    ClientToServerEvents,
-} from "../../../types/socketio";
+import { ServerToClientEvents, ClientToServerEvents } from "boomerdog-types";
 
 export type BoomerDogSocket = Socket<
     ServerToClientEvents,
