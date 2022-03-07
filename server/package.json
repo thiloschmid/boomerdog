@@ -23,7 +23,7 @@
         "typescript": "^4.5.5"
     },
     "dependencies": {
-        "boomerdog-types": "file:../types/boomerdog-types-1.0.0.tgz",
+        "boomerdog-types": "file:boomerdog-types-1.0.0.tgz",
         "config": "^3.3.7",
         "express": "^4.17.2",
         "node-fetch": "^3.2.0",
