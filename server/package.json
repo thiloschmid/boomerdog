@@ -9,6 +9,9 @@
         "develop": "nodemon --watch 'src/**' --ext 'ts,json' --ignore 'src/**/*.spec.ts' --exec 'node --loader ts-node/esm src/api/index.ts'",
         "test": "jest"
     },
+    "engines": {
+        "node": "17.x"
+    },
     "author": "",
     "license": "ISC",
     "devDependencies": {
