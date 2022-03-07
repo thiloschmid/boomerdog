@@ -8,6 +8,14 @@ The default combination of nodemon and ts-node does not like esm import syntax, 
 
 ### Linking the types file
 
-To be able to use the common types in both `client` and `server` directories, the `boomerdog-types` package has to be linked via
+To be able to use the common types in both `client` and `server` directories, the `boomerdog-types` package has to be packed via
 
-    npm link ../types
+    npm pack 
+
+in `boomerdog/types`. Then it can be copied into both `client` and `server` and installed via 
+
+    npm i ./boomerdog-types-1.0.0.tgz
+
+### Deploy subfolder to heroku
+
+See https://stackoverflow.com/questions/39197334/automated-heroku-deploy-from-subfolder
