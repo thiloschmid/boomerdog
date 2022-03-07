@@ -8,7 +8,9 @@ export type BoomerDogSocket = Socket<
 >;
 
 export const getAuthenticatedSocket = (token: string) => {
-    const socket: BoomerDogSocket = io("http://localhost:3002", {
+    const backend =
+        process.env.REACT_APP_BACKEND_URL || "http://localhost:3002";
+    const socket: BoomerDogSocket = io(backend, {
         auth: { token: `${token}` },
     });
     return socket;
