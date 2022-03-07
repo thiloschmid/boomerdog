@@ -58,46 +58,65 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
             );
     };
 
+    const quitGame = () => {
+        socket &&
+            player &&
+            player.gameId &&
+            socket.emit(
+                "game:quit",
+                { gameId: player.gameId },
+                (response: IoResponse) => {
+                    if (response.status) {
+                        console.error(response.message);
+                    }
+                }
+            );
+    };
+
     const fold = () => {
         socket &&
             player &&
             player.gameId &&
             socket.emit("game:fold", { gameId: player.gameId }, (response) => {
-                if (!response.status) {
+                if (response.status) {
                     console.error(response.message);
                 }
             });
     };
 
     React.useEffect(() => {
-        const socket = getAuthenticatedSocket(authToken);
-        socket.on("connect", () => {
-            console.debug("Socket connected");
-            setIsConnected(true);
-        });
-        socket.on("disconnect", () => {
-            console.debug("Socket disconnected");
-            setIsConnected(false);
-        });
-        socket.on("gamestate:update", (payload) => {
-            console.debug("gamestate updated", payload);
-            setGameState(payload);
-        });
-        socket.on("user:update", (payload: User) => {
-            console.debug("player updated", payload);
-            setPlayer(payload);
-        });
-        socket.on("gamedata:update", (payload) => {
-            console.debug("gamedata updated", payload);
-            setGameData(payload);
-        });
-        socket.on("cards:update", (payload) => {
-            console.log("cards updated", payload);
-            setCards(payload);
-            setSelectedCard(null);
-        });
-        setSocket(socket);
-    }, [state.user]);
+        if (authToken) {
+            const authSocket = getAuthenticatedSocket(authToken);
+            authSocket.on("connect", () => {
+                console.debug("Socket connected");
+                setIsConnected(true);
+            });
+            authSocket.on("disconnect", () => {
+                console.debug("Socket disconnected");
+                setIsConnected(false);
+            });
+            authSocket.on("gamestate:update", (payload) => {
+                console.debug("gamestate updated", payload);
+                setGameState(payload);
+            });
+            authSocket.on("user:update", (payload: User) => {
+                console.debug("player updated", payload);
+                setPlayer(payload);
+            });
+            authSocket.on("gamedata:update", (payload) => {
+                console.debug("gamedata updated", payload);
+                setGameData(payload);
+            });
+            authSocket.on("cards:update", (payload) => {
+                console.log("cards updated", payload);
+                setCards(payload);
+                setSelectedCard(null);
+            });
+            setSocket(authSocket);
+        } else {
+            socket?.close();
+        }
+    }, [state.user, authToken]);
 
     React.useEffect(() => {
         if (socket && player && player.gameId && gameState === null) {
@@ -118,22 +137,31 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
                             {/* <Heading>{`${gameData.gameName}`}</Heading> */}
                             <Flex>
                                 {!gameData.hasStarted && (
-                                    <Button
-                                        colorScheme="teal"
-                                        m={5}
-                                        onClick={startGame}
-                                    >
-                                        Start game
-                                    </Button>
+                                    <>
+                                        <Button
+                                            colorScheme="teal"
+                                            m={2}
+                                            onClick={startGame}
+                                        >
+                                            Start game
+                                        </Button>
+                                        <Button
+                                            colorScheme="red"
+                                            m={2}
+                                            onClick={quitGame}
+                                        >
+                                            Quit game
+                                        </Button>
+                                    </>
                                 )}
                             </Flex>
                             {gameData.players && (
                                 <>
                                     <BoardWrapper
-                                        userId={player.userId}
-                                        gameId={gameData.gameId}
+                                        gameData={gameData}
+                                        gameState={gameState}
+                                        player={player}
                                         socket={socket}
-                                        nPlayers={4}
                                         isActive={
                                             gameState?.activePlayerUserId ===
                                             player.userId
@@ -156,12 +184,20 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
                                         }
                                         stack={gameState?.stack || []}
                                         fold={fold}
+                                        isSwapping={
+                                            gameState?.gamePhase ===
+                                            GamePhase.Swapping
+                                        }
                                     />
                                     <Cards
                                         cards={cards}
                                         selectedCard={selectedCard}
                                         setSelectedCard={setSelectedCard}
                                         hasStarted={gameData.hasStarted}
+                                        isSwapping={
+                                            gameState?.gamePhase ===
+                                            GamePhase.Swapping
+                                        }
                                     />
                                 </>
                             )}

@@ -337,8 +337,13 @@ export default class Board {
 
     executeMove(p: number, m: number, move: number[]) {
         const nOld = this.marbleLocations[p][m];
+
         // check if going out
         if (move[0] === -1) {
+            if (nOld !== -1) {
+                console.warn(`Tried going out with marble not in base`);
+                return;
+            }
             let outIndex = 16 * p;
             // clear any marble
             this.clearNode(outIndex);
@@ -376,8 +381,18 @@ export default class Board {
             this.isRegularIndex(move[move.length - 1]) &&
                 this.clearNode(move[move.length - 1]);
         }
-        // clear the old position
-        this.nodes[nOld] = this.nPlayers;
+
+        /* clear the old position */
+        if (this.isRegularIndex(nOld)) {
+            this.nodes[nOld] = this.nPlayers;
+        } else {
+            const endzoneIndex = this.indexToEndzoneIndex(nOld);
+            if (endzoneIndex) {
+                this.endzones[endzoneIndex[0]][endzoneIndex[1]] = false;
+            } else {
+                console.error(`Invalid index`);
+            }
+        }
 
         const nNew = move[move.length - 1];
 
@@ -410,10 +425,13 @@ export default class Board {
 
     getSwitchCandidates(p: number) {
         const switchCandidates = [];
-        for (let i = 0; i < this.nNodes; i++) {
-            this.nodes[i] < this.nPlayers &&
-                this.nodes[i] !== p &&
-                switchCandidates.push(i);
+        for (let p = 0; p < this.nPlayers; p++) {
+            for (let m = 0; m < 4; m++) {
+                const n = this.marbleLocations[p][m];
+                if (this.isRegularIndex(n) && this.nodes[n] === p) {
+                    switchCandidates.push(n);
+                }
+            }
         }
         return switchCandidates;
     }

@@ -57,6 +57,7 @@ export interface ClientToServerEvents {
     }, callback: IoCallback<AuthenticateUserIoResponse>) => void;
     "game:create": (payload: CreateGamePayload, callback: IoCallback<CreateGameIoResponse>) => void;
     "game:join": (payload: GameIdentifierPayload, callback: IoCallback<IoResponse>) => void;
+    "game:quit": (payload: GameIdentifierPayload, callback: IoCallback<IoResponse>) => void;
     "games:read": () => void;
     "game:start": (payload: {
         gameId: string;
@@ -64,6 +65,7 @@ export interface ClientToServerEvents {
     "game:reconnect": (payload: GameIdentifierPayload) => void;
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
+    "game:swap_card": (payload: number, callback: IoCallback<IoResponse>) => void;
     "game:perform_move": (payload: PerformMovePayload, callback: IoCallback<IoResponse>) => void;
     "game:perform_remaining_move": (payload: PerformRemainingMovePayload, callback: IoCallback<IoResponse>) => void;
     "game:fold": (payload: GameIdentifierPayload, callback: IoCallback<IoResponse>) => void;

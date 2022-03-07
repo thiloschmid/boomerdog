@@ -22,6 +22,7 @@ const Layout = (props: LayoutProps) => {
                 isConnected={props.isConnected}
             />
             <Box
+                maxW={1000}
                 position="relative"
                 mx="auto"
                 overflow="hidden"

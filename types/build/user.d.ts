@@ -1,6 +1,7 @@
 export interface UserBase {
     name: string;
     userId: UserId;
+    avatarUrl: string;
 }
 export interface User extends UserBase {
     gameId?: string;

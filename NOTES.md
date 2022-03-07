@@ -83,9 +83,11 @@ There are three different quantities related to the game's state:
  
 ### Backend
 
-Just run
+Run 
 
     npm test
+
+in `boomerdog/server/`
 
 ## Authentication
 

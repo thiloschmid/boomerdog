@@ -1,4 +1,5 @@
 import {
+    Box,
     Button,
     Table,
     Tbody,
@@ -44,7 +45,7 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
     };
 
     return (
-        <>
+        <Box mt={2}>
             {!player.gameId && <CreateGameDrawer {...{ socket, player }} />}
             <Table variant="simple">
                 <Thead>
@@ -88,7 +89,7 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                     })}
                 </Tbody>
             </Table>
-        </>
+        </Box>
     );
 };
 

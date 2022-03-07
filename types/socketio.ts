@@ -50,7 +50,7 @@ export interface PerformMovePayload
 }
 
 // same as above but without cards
-export interface PerformRemainingMovePayload 
+export interface PerformRemainingMovePayload
     extends GameIdentifierPayload,
         UserIdentifierPayload {
     m: number;
@@ -94,6 +94,10 @@ export interface ClientToServerEvents {
         payload: GameIdentifierPayload,
         callback: IoCallback<IoResponse>
     ) => void;
+    "game:quit": (
+        payload: GameIdentifierPayload,
+        callback: IoCallback<IoResponse>
+    ) => void;
     "games:read": () => void;
     "game:start": (
         payload: { gameId: string },
@@ -104,6 +108,11 @@ export interface ClientToServerEvents {
 
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
+
+    "game:swap_card": (
+        payload: number,
+        callback: IoCallback<IoResponse>
+    ) => void;
 
     "game:perform_move": (
         payload: PerformMovePayload,

@@ -29,6 +29,8 @@ export const registerGameHandler = (socket: ServerSocket) => {
     ) => {
         const user = getUserFromSocket(socket);
 
+        console.log(user)
+
         if (!user) {
             callback({ status: 1, message: "Player not found" });
             return;
@@ -57,6 +59,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
             game.emitGameData();
             game.emitBoardData();
         }
+        console.log(response);
         callback(response);
     };
 
@@ -105,6 +108,36 @@ export const registerGameHandler = (socket: ServerSocket) => {
         callback(response);
     };
 
+    const quitGame = (
+        { gameId }: { gameId: string },
+        callback: IoCallback<IoResponse>
+    ) => {
+        const game = gamesMap.get(gameId);
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+        const user = getUserFromSocket(socket);
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
+        }
+        const response = game.playerQuit(user);
+        if (!response.status) {
+            socket.leave(gameId);
+
+            if (!game.players.length) {
+                // clear the game if no players are left
+                gamesMap.delete(gameId);
+            }
+
+            emitGameList();
+            updateUser(user.userId);
+
+            game.emitGameData();
+        }
+    };
+
     const startGame = (
         { gameId }: { gameId: string },
         callback: IoCallback<IoResponse>
@@ -127,6 +160,26 @@ export const registerGameHandler = (socket: ServerSocket) => {
 
         // perhaps check if successful to remove it from the game browser
         return game.startGame();
+    };
+
+    const performSwap = (payload: number, callback: IoCallback<IoResponse>) => {
+        const user = getUserFromSocket(socket);
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
+        }
+        const game = user.gameId ? gamesMap.get(user.gameId) : null;
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+        const response = game.playerSwaps(user, payload);
+
+        if (response.status) {
+            console.error(response.message);
+        }
+
+        callback(response);
     };
 
     const performMove = (
@@ -214,7 +267,8 @@ export const registerGameHandler = (socket: ServerSocket) => {
                 `Player ${user?.userId} tries to reconnect to ${gameId} = ${game?.gameId}`
             )
         );
-        if (user && game) {
+
+        if (user && game && game.players.includes(user)) {
             game.emitGameData(user.userId);
             if (game.hasStarted) {
                 game.emitGameState(user.userId);
@@ -233,7 +287,9 @@ export const registerGameHandler = (socket: ServerSocket) => {
     socket.on("games:read", emitGameList);
     socket.on("game:create", createGame);
     socket.on("game:join", joinGame);
+    socket.on("game:quit", quitGame);
     socket.on("game:start", startGame);
+    socket.on("game:swap_card", performSwap);
     socket.on("game:perform_move", performMove);
     socket.on("game:perform_remaining_move", performRemainingMove);
     socket.on("game:fold", fold);

@@ -1,6 +1,7 @@
 export interface UserBase {
     name: string;
     userId: UserId;
+    avatarUrl: string;
 }
 
 // interface for users which are connected via socket.io

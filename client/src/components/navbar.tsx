@@ -60,7 +60,7 @@ export interface NavBarProps {
 const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
     const { state, dispatch } = React.useContext(AuthContext);
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const collapseDisclosure = useDisclosure();
+    const collapseDisclosure = useDisclosure({ defaultIsOpen: true });
 
     const logout = () => {
         console.log("logout");
@@ -86,7 +86,8 @@ const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
                 zIndex={1000}
             />
             <Collapse in={collapseDisclosure.isOpen} animateOpacity>
-                <Box bg={useColorModeValue("gray.100", "gray.900")} px={4}>
+                {/* <Box bg={useColorModeValue("gray.100", "gray.900")} px={4}> */}
+                <Box px={4}>
                     <Flex
                         h={16}
                         alignItems={"center"}

@@ -1,7 +1,13 @@
-import { GameData, GamePhase, GameState } from "boomerdog-types";
+import {
+    GameData,
+    GamePhase,
+    GameState,
+    CardMoves,
+    MarbleMoves,
+} from "boomerdog-types";
 import { User } from "../../../types/user.js";
 import { io, userMap } from "../api/index.js";
-import { green, yellow } from "../api/utils/colors.js";
+import { blue, green, red, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";
 
 export default class BoomerDogHandler extends BoomerDog {
@@ -102,8 +108,10 @@ export default class BoomerDogHandler extends BoomerDog {
         const gameState: GameState = {
             gamePhase: this.gamePhase,
             numberOfDistributedCards: 6 - (this.roundNumber % 5),
+            activePlayerIndex: this.activePlayerIndex,
             activePlayerUserId: activePlayer ? activePlayer.userId : "",
             stack: this.deck.stack,
+            hasSwapped: this.swapCards.map((c) => c !== -1),
         };
 
         if (this.gamePhase === GamePhase.WaitingForSevenMove) {
@@ -130,7 +138,7 @@ export default class BoomerDogHandler extends BoomerDog {
         }
 
         // check if the player is already in the game
-        if (this.players.map((player) => player.userId).includes(user.userId)) {
+        if (this.players.includes(user)) {
             return { status: 1, message: "Player is already in the game" };
         }
 
@@ -140,18 +148,30 @@ export default class BoomerDogHandler extends BoomerDog {
         return { status: 0 };
     }
 
-    playerQuit(user: User) {}
+    playerQuit(user: User) {
+        console.log(blue(`${user.name} quit`));
+        if (this.hasStarted) {
+            return { status: 1, message: "Game has already started" };
+        }
+        const index = this.players.indexOf(user);
+        if (index === -1) {
+            return { status: 1, message: "Player is not in the game" };
+        }
+        this.players.splice(index);
+        delete user.gameId;
+
+        return { status: 0 };
+    }
 
     startGame() {
         if (this.hasStarted) {
             return { status: 1, message: "Game has already started" };
         }
-        super.startGame();
+        super.startGame(); // for now does nothing
         this.hasStarted = true;
 
         this.emitBoardData();
         this.emitGameData();
-        this.emitGameState();
         this.startRound();
     }
 
@@ -159,9 +179,20 @@ export default class BoomerDogHandler extends BoomerDog {
 
     startRound() {
         super.setupRound();
-
         this.emitCards();
-        this.startTurn();
+
+        for (let p = this.players.length; p < this.nPlayers; p++) {
+            // swap random card for AI players
+            const nCards = this.deck.hands[p].reduce(
+                (prev, current) => (current === null ? prev : ++prev),
+                0
+            );
+            const randomCard = Math.floor(Math.random() * nCards);
+
+            super.storeSwapCard(p, randomCard);
+        }
+
+        this.emitGameState();
     }
 
     startTurn() {
@@ -169,12 +200,13 @@ export default class BoomerDogHandler extends BoomerDog {
         const activePlayer = this.getActivePlayer();
         if (activePlayer) {
             this.emitPossibleMoves();
-            console.log(`${green(`${activePlayer.name}'s turn`)}`);
         } else {
             // AI opponent
-            console.log(`${green(`AI ${this.activePlayerIndex} folding`)}`);
-            super.fold();
-            this.endTurn();
+            setTimeout(() => {
+                this.aiMoves();
+                this.emitBoardData();
+                this.endTurn();
+            }, 1000);
         }
     }
 
@@ -189,6 +221,7 @@ export default class BoomerDogHandler extends BoomerDog {
             return;
         }
         super.moveToNextPlayer();
+        this.emitGameState();
         this.startTurn();
     }
 
@@ -197,12 +230,48 @@ export default class BoomerDogHandler extends BoomerDog {
         this.startRound();
     }
 
+    /* 🤗 Handle player interaction */
+
+    playerSwaps(user: User, c: number) {
+        if (this.gamePhase !== GamePhase.Swapping) {
+            return {
+                status: 1,
+                message: `Wrong game phase ${this.gamePhase}`,
+            };
+        }
+        const index = this.players.indexOf(user);
+
+        if (index === -1) {
+            return {
+                status: 1,
+                message: `Player does not exist`,
+            };
+        }
+        super.storeSwapCard(index, c);
+
+        if (super.swapIsComplete()) {
+            super.swap();
+            this.emitCards();
+            this.startTurn();
+        }
+        this.emitGameState();
+
+        return { status: 0 };
+    }
+
     playerPerformsMove(userId: string, c: number, m: number, mi: number) {
+        const gamePhase = this.gamePhase;
+        if (gamePhase !== GamePhase.Playing) {
+            return {
+                status: 1,
+                message: `Wrong game phase ${this.gamePhase}`,
+            };
+        }
         const activePlayer = this.getActivePlayer();
         if (userId !== activePlayer?.userId) {
             return {
                 status: 1,
-                message: `It is not player ${activePlayer?.name}'s turn`,
+                message: `${userId} is not the active player`,
             };
         }
         if (this.deck.hands[this.activePlayerIndex][c] === null) {
@@ -232,11 +301,6 @@ export default class BoomerDogHandler extends BoomerDog {
                 // complete
                 this.endTurn();
             }
-        } else if (response.status === 7) {
-            this.emitCards(activePlayer.userId);
-            this.emitBoardData();
-            this.emitGameState();
-            this.emitPossibleMoves();
         }
 
         return response;
@@ -253,7 +317,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
             return {
                 status: 1,
-                message: `Wrong call. Invalid request to complete the seven steps`,
+                message: `Wrong game phase ${this.gamePhase}. Invalid request to complete the seven steps`,
             };
         }
         if (!this.remainingMoves || !this.remainingMoves[m][mi]) {
@@ -304,5 +368,87 @@ export default class BoomerDogHandler extends BoomerDog {
         this.endTurn();
 
         return { status: 0 };
+    }
+
+    computeMoveWeight(move: number[]) {
+        return 1;
+    }
+
+    flattenMoves(allMoves: CardMoves[]) {
+        /*
+        Returns an 4-tuple for every possible move. 
+        [card index, marble index, move index, move weight]
+        */
+        const movesList = [];
+        for (let c = 0; c < allMoves.length; c++) {
+            for (let m = 0; m < allMoves[c].length; m++) {
+                for (let mi = 0; mi < allMoves[c][m].length; mi++) {
+                    const move = allMoves[c][m][mi];
+                    if (!move) {
+                        break;
+                    }
+                    movesList.push({
+                        card: c,
+                        marble: m,
+                        move: mi,
+                        weight: this.computeMoveWeight(move),
+                    });
+                }
+            }
+        }
+
+        movesList.sort((first, second) => second.weight - first.weight);
+
+        return movesList;
+    }
+
+    flattenRemainingMoves(allMoves: MarbleMoves[]) {
+        const movesList = [];
+
+        for (let m = 0; m < allMoves.length; m++) {
+            for (let mi = 0; mi < allMoves[m].length; mi++) {
+                const move = allMoves[m][mi];
+                movesList.push({
+                    marble: m,
+                    move: mi,
+                    weight: this.computeMoveWeight(move),
+                });
+            }
+        }
+
+        movesList.sort((first, second) => second.weight - first.weight);
+
+        return movesList;
+    }
+
+    aiMoves() {
+        console.log(`${green(`Select AI ${this.activePlayerIndex} move`)}`);
+        const allMoves = super.getPossibleMoves();
+        const movesList = this.flattenMoves(allMoves);
+
+        if (!movesList.length) {
+            super.fold();
+            return;
+        }
+
+        const bestMove = movesList[0];
+
+        console.log(bestMove);
+
+        super.performMove(bestMove.card, bestMove.marble, bestMove.move);
+
+        if (this.gamePhase === GamePhase.WaitingForSevenMove) {
+            const remainingMoves = super.getRemainingMoves();
+
+            if (remainingMoves === null) {
+                console.error(red(`No remaining moves found`));
+                return;
+            }
+            const remainingMovesList =
+                this.flattenRemainingMoves(remainingMoves);
+
+            const bestRem = remainingMovesList[0];
+            super.performRemainingMove(bestRem.marble, bestRem.move);
+        }
     }
 }

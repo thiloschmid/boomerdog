@@ -34,11 +34,11 @@ export const App = () => {
                                     isConnected={isConnected}
                                     loginElement={<Login />}
                                 >
-                                    {state.isLoggedIn && state.user?.id && (
+                                    {state.isLoggedIn && state.authToken && (
                                         // Here, sockets exist 🔥
                                         <Game
                                             {...{
-                                                authToken: `${state.user.id}`,
+                                                authToken: `${state.authToken}`,
                                                 isConnected,
                                                 setIsConnected,
                                             }}

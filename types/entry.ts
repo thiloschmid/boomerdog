@@ -46,7 +46,9 @@ interface GameState {
     gamePhase: GamePhase;
     numberOfDistributedCards: number;
     activePlayerUserId: string;
+    activePlayerIndex: number;
     stack: CardBase[];
+    hasSwapped: boolean[];
     remainingMoves?: number;
 }
 

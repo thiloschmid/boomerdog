@@ -43,6 +43,8 @@ export default class BoomerDog {
     remainderForSevenCard;
     remainingMoves: MarbleMoves[] | null;
 
+    swapCards: number[];
+
     constructor(nPlayers: number) {
         this.nPlayers = nPlayers;
         this.board = new Board(nPlayers);
@@ -56,22 +58,20 @@ export default class BoomerDog {
         this.roundNumber = 0;
 
         this.isPlaying = [true, true, true, true];
+        this.swapCards = [-1, -1, -1, -1]; // store the card index
 
         this.remainderForSevenCard = 7;
     }
 
-    startGame() {
-        if (this.gamePhase === GamePhase.Waiting) {
-            this.gamePhase = GamePhase.Playing;
-        }
-    }
+    startGame() {}
 
     setupRound() {
         console.debug(`${blue(`Round ${this.roundNumber} started`)}`);
         // first distribute 6 cards, then 5, ..., down to 2 cards
         this.deck.distributeCards(6 - (this.roundNumber % 5));
-        this.activePlayerIndex = this.roundNumber % 4;
-        this.isPlaying = [true, true, true, true];
+
+        // set new game phase
+        this.gamePhase = GamePhase.Swapping;
     }
 
     setupTurn() {
@@ -85,6 +85,33 @@ export default class BoomerDog {
 
     gameIsFinished() {
         return false; // the game never finishes lol 🏁
+    }
+
+    storeSwapCard(p: number, c: number) {
+        console.debug(`${blue(`Player ${p} swaps card ${c}`)}`);
+        this.swapCards[p] = c;
+    }
+
+    swapIsComplete() {
+        return !this.swapCards.includes(-1);
+    }
+
+    swap() {
+        console.debug(blue(`Swapping cards`));
+        for (let p = 0; p < this.nPlayers / 2; p++) {
+            // exchange cards between player p and player p + nPlayers/2, i.e.
+            // for four plazers 0<=>2, and 1<=>3
+            const c = this.swapCards[p];
+            const p2 = p + this.nPlayers / 2;
+            const c2 = this.swapCards[p2];
+            this.deck.hands[p][c] = this.deck.hands[p2][c2];
+        }
+
+        this.swapCards = [-1, -1, -1, -1];
+        this.gamePhase = GamePhase.Playing;
+
+        this.activePlayerIndex = this.roundNumber % 4;
+        this.isPlaying = [true, true, true, true];
     }
 
     moveToNextPlayer() {
@@ -116,8 +143,6 @@ export default class BoomerDog {
 
     finalizeRound() {
         this.roundNumber++;
-        // set new game phase
-        // this.gamePhase = GamePhase.Swapping;
     }
 
     getPlayerCards(p: number) {
@@ -199,6 +224,12 @@ export default class BoomerDog {
      * @param mi - The move index
      */
     performMove(c: number, m: number, mi: number) {
+        // make sure the card exists
+        if (this.deck.hands[this.activePlayerIndex][c] === null) {
+            return { status: 1, message: `Card ${c} does not exist.` };
+        }
+        // if ()
+
         const moves = this.possibleMoves[c][m];
         console.log(
             `${blue(
@@ -208,16 +239,20 @@ export default class BoomerDog {
             )}`
         );
 
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
-
-        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
-            // this is always the case except if a seven move is performed and
-            // the card has already been played
-            this.deck.cardPlayed(this.activePlayerIndex, c);
-        }
-
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
         if (moves[mi][0] >= SEVEN_MOVE_OFFSET) {
+            // if it is the first action with the seven card, make sure that
+            // the seven moves can be completed ⚠️
+            if (
+                this.remainderForSevenCard === 7 &&
+                !this.board.playerCanCompleteSeven(this.activePlayerIndex)
+            ) {
+                return {
+                    status: 1,
+                    message: "Player can't complete seven moves",
+                };
+            }
+
             if (moves[mi].length > this.remainderForSevenCard) {
                 console.error("Invalid move, not enough moves left");
                 return {
@@ -236,6 +271,14 @@ export default class BoomerDog {
                 this.gamePhase = GamePhase.Playing;
                 this.remainderForSevenCard = 7; // reset to previous value
             }
+        }
+
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+
+        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+            // this is always the case except if a seven move is performed and
+            // the card has already been played
+            this.deck.cardPlayed(this.activePlayerIndex, c);
         }
 
         // check if the player is finished playing

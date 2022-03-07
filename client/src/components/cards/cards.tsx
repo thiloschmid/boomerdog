@@ -39,6 +39,7 @@ interface CardsProps {
     setSelectedCard: React.Dispatch<React.SetStateAction<number | null>>;
     socket?: BoomerDogSocket;
     hasStarted: boolean;
+    isSwapping: boolean;
 }
 const Cards = ({
     cards,
@@ -59,7 +60,13 @@ const Cards = ({
             {cards.map(
                 (card, i) =>
                     card && (
-                        <AspectRatio key={i} w="60" maxW={"8em"} ratio={5 / 7} mb="2em">
+                        <AspectRatio
+                            key={i}
+                            w="60"
+                            maxW={"8em"}
+                            ratio={5 / 7}
+                            mb="2em"
+                        >
                             <chakra.img
                                 mt={i === selectedCard ? "0em" : "1em"}
                                 cursor="pointer"

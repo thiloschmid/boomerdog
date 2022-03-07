@@ -1,7 +1,6 @@
 import * as React from "react";
 import { chakra } from "@chakra-ui/react";
-import { BOARD_SIZE } from "./board";
-
+import { User } from "boomerdog-types";
 
 export const avatarSize = 100;
 const avatarStrokeWidth = 6;
@@ -10,11 +9,20 @@ const avatarRadius = avatarSize / 2 - avatarStrokeWidth;
 const pathlength = 295.31; // 2 * pi * 47
 
 interface AvatarProps {
+    avatarUrl: string;
+    player: User;
     position: { x: number; y: number };
     color: string;
     isActive: boolean;
+    isMe: boolean;
 }
-const Avatar = ({ position, color, isActive }: AvatarProps) => {
+const Avatar = ({
+    avatarUrl,
+    position,
+    color,
+    isActive,
+    isMe,
+}: AvatarProps) => {
     return (
         <svg x={position.x} y={position.y}>
             <defs>
@@ -59,7 +67,7 @@ const Avatar = ({ position, color, isActive }: AvatarProps) => {
             <image
                 width={avatarSize}
                 height={avatarSize}
-                href={"/dog.jpg"}
+                href={avatarUrl}
                 clipPath={"url(#circleView"}
             />
         </svg>

@@ -5,6 +5,7 @@ export interface UserData {
 }
 
 export interface UserState {
+    authToken: string | null;
     isLoggedIn: boolean;
     user: UserData | null;
     client_id?: string;
@@ -23,6 +24,7 @@ const tryToReadLocalStorage = (item: string) => {
 };
 
 export const initialState: UserState = {
+    authToken: tryToReadLocalStorage("authToken"),
     isLoggedIn: !!tryToReadLocalStorage("isLoggedIn"),
     user: tryToReadLocalStorage("user"),
     client_id: process.env.REACT_APP_CLIENT_ID,
@@ -31,7 +33,9 @@ export const initialState: UserState = {
     // proxy_url: process.env.REACT_APP_PROXY_URL,
 };
 
-export type AuthReducerAction = { type: "LOGIN"; payload: any } | { type: "LOGOUT" };
+export type AuthReducerAction =
+    | { type: "LOGIN"; payload: any }
+    | { type: "LOGOUT" };
 
 export const reducer = (
     state: UserState,
@@ -40,12 +44,17 @@ export const reducer = (
     switch (action.type) {
         case "LOGIN": {
             localStorage.setItem(
+                "authToken",
+                JSON.stringify(action.payload.authToken)
+            );
+            localStorage.setItem(
                 "isLoggedIn",
                 JSON.stringify(action.payload.isLoggedIn)
             );
             localStorage.setItem("user", JSON.stringify(action.payload.user));
             return {
                 ...state,
+                authToken: action.payload.authToken,
                 isLoggedIn: action.payload.isLoggedIn,
                 user: action.payload.user,
             };
@@ -54,6 +63,7 @@ export const reducer = (
             localStorage.clear();
             return {
                 ...state,
+                authToken: null,
                 isLoggedIn: false,
                 user: null,
             };

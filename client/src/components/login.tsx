@@ -38,7 +38,11 @@ const Login = () => {
                 console.log(userData);
                 dispatch({
                     type: "LOGIN",
-                    payload: { user: userData, isLoggedIn: true },
+                    payload: {
+                        authToken: token,
+                        user: userData,
+                        isLoggedIn: true,
+                    },
                 });
             });
     };
@@ -106,7 +110,7 @@ const Login = () => {
                             ) : (
                                 <Button
                                     mx={"auto"}
-                                    colorScheme={"blackAlpha"}
+                                    colorScheme={"black"}
                                     leftIcon={<GoMarkGithub />}
                                     as={"a"}
                                     href={`https://github.com/login/oauth/authorize?scope=user&client_id=${client_id}&redirect_uri=${redirect_uri}`}

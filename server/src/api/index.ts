@@ -1,4 +1,4 @@
-import express from "express";
+import express, { response } from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 import { Server } from "socket.io";
@@ -7,7 +7,7 @@ import config from "config";
 
 import { emitGameList, registerGameHandler } from "./handlers/game_handler.js";
 import { green, red, yellow } from "./utils/colors.js";
-import { registerUserHandler } from "./handlers/user_handler.js";
+// import { registerUserHandler } from "./handlers/user_handler.js";
 import { SocketIoServer, ServerSocket } from "./types.js";
 import { SocketId, UserId, User } from "../../../types/user.js";
 import { registerCardHandler } from "./handlers/card_handler.js";
@@ -24,69 +24,105 @@ export const io = new Server(httpServer, {
     },
 }) as SocketIoServer;
 
-export const socketIdToUserId = new Map<SocketId, UserId>();
+// export const socketIdToUserId = new Map<SocketId, UserId>();
 export const userMap = new Map<UserId, User>();
+export const tokenMap = new Map<string, UserId>();
 export const gamesMap = new Map<string, BoomerDogClient>();
 
 export const getUserFromSocket = (socket: ServerSocket) => {
     const token = socket.handshake.auth.token;
     if (token) {
-        const user = userMap.get(token);
-        if (user) {
-            return user;
+        const userId = getUserIdFromToken(token);
+        if (userId) {
+            const user = userMap.get(userId);
+            if (user) {
+                return user;
+            } else {
+                console.debug(`user does not exist`);
+            }
+        } else {
+            console.debug(`userId does not exist`);
         }
+    } else {
+        console.debug(`token does not exist`);
     }
     return null;
 };
 
-export const updateUser = (userId: string) => {
-    const user = userMap.get(userId);
-    user && io.to(userId).emit("user:update", user);
+const getUserIdFromToken = (token: string) => {
+    return tokenMap.get(token);
 };
 
-const onConnection = (socket: ServerSocket) => {
+export const updateUser = (userId: string) => {
+    const user = userMap.get(userId);
+    user && io.to(user.userId).emit("user:update", user);
+};
+
+const onConnection = async (socket: ServerSocket) => {
     console.log(
         green(
             `Socket connection: ${socket.id} from ${socket.handshake.auth.token}`
         )
     );
 
-    const userId = socket.handshake.auth.token;
-    socket.join(userId); // join a user-specific room
+    const token = socket.handshake.auth.token;
+    const userId = getUserIdFromToken(token);
 
-    const rooms = io.of("/").adapter.rooms;
-
-    console.log("room: ", rooms.get(userId));
-
-    registerGameHandler(socket);
-    registerCardHandler(socket);
-    registerUserHandler(socket);
-
-    socketIdToUserId.set(socket.id, userId);
-
-    const user = userMap.get(userId);
+    let user = userId ? userMap.get(userId) : null;
 
     // check if the player exists
     if (user) {
         if (user.gameId) {
-            // join the game socket for gamestate 
+            // join the game socket for gamestate
             socket.join(user.gameId);
         }
     } else {
-        // create User
-        const newUser = {
-            name: userId,
-            userId: userId,
+        // fetch user data
+        const response = await fetch("https://api.github.com/user", {
+            method: "get",
+            headers: { Authorization: `token ${token}` },
+        });
+
+        const data = (await response.json()) as {
+            id: number;
+            avatar_url: string;
+            name: string;
         };
-        userMap.set(userId, newUser);
+
+        if (!data) {
+            console.warn(`Unable to authenticate token ${token}`);
+            return;
+        }
+
+        // create User
+
+        user = {
+            name: data.name,
+            userId: `${data.id}`,
+            avatarUrl: data.avatar_url,
+        };
+        userMap.set(user.userId, user);
+        tokenMap.set(token, user.userId);
     }
 
+    socket.join(user.userId); // join a user-specific room
+
+    // show sockets in the userId's room
+    // const rooms = io.of("/").adapter.rooms;
+    // console.log("room: ", rooms.get(userId));
+
+    registerGameHandler(socket);
+    registerCardHandler(socket);
+    // registerUserHandler(socket);
+
+    // socketIdToUserId.set(socket.id, user.userId);
+
     emitGameList();
-    updateUser(userId);
+    updateUser(user.userId);
 
     socket.on("disconnect", () => {
         console.log(red(`Socket disconnect: ${socket.id}`));
-        console.log("room: ", rooms.get(userId));
+        // console.log("room: ", rooms.get(userId));
     });
 };
 
@@ -98,13 +134,6 @@ app.get("/token", async function (req, res) {
 
     const response = await fetch(`${proxy_url}/${code}`);
     const data = (await response.json()) as { token: string };
-
-    // could get some user data here
-    // const responseToken = await fetch("https://api.github.com/user", {
-    //     headers: {
-    //         Authorization: `token ${data.token}`,
-    //     },
-    // });
 
     if (data && data.token) {
         res.send({ status: 0, token: `${data.token}` });

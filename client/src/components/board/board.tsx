@@ -14,7 +14,14 @@ import {
 import { cardToSvg } from "../cards/cards";
 import { boardNodes } from "./board_data";
 import BoomerdogAvatar, { avatarSize } from "./avatar";
-import { CardMoves, CardBase, MarbleMoves } from "boomerdog-types";
+import {
+    CardMoves,
+    CardBase,
+    MarbleMoves,
+    GameData,
+    GamePhase,
+    GameState,
+} from "boomerdog-types";
 import Popup from "./popup";
 
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
@@ -55,33 +62,39 @@ const pulse = keyframes`
 const pulseAnimation = `${pulse} infinite 1.5s linear`;
 
 export interface BoardProps {
+    gameData: GameData;
+    gameState: GameState | null;
     marbleLocations: number[][]; // [cards][marbles][moves]
     stack: CardBase[];
     possibleMoves: CardMoves[];
     selectedCard: number | null;
-    nPlayers: number;
     isActive: boolean;
     playerIndex: number;
     stepsRemaining: number | null; // only relevant for the 7️⃣ card
     remainingMoves: MarbleMoves[];
-    onNodeClick: (n: number) => void;
-    onMarbleClick: (m: number) => void;
+    // onNodeClick: (n: number) => void;
+    // onMarbleClick: (m: number) => void;
     moveSelected: (m: number, t: number) => void;
     moveRemaining: (m: number, t: number) => void;
     fold: () => void;
+    swap: () => void;
 }
+
 const Board = ({
+    gameData,
+    gameState,
     marbleLocations,
     stack,
     possibleMoves,
     selectedCard,
     isActive,
     playerIndex,
-    moveSelected,
     stepsRemaining,
-    moveRemaining,
     remainingMoves,
+    moveSelected,
+    moveRemaining,
     fold,
+    swap,
 }: BoardProps) => {
     const [popoverIsOpen, setPopoverIsOpen] = React.useState(false);
     const [expandCards, setExpandCards] = React.useState(false);
@@ -358,8 +371,24 @@ const Board = ({
                         {avatarPositions.map((pos, i) => (
                             <BoomerdogAvatar
                                 key={`avatar-${i}`}
+                                avatarUrl={
+                                    i < gameData.players.length
+                                        ? gameData.players[i].avatarUrl
+                                        : "/dog.jpg"
+                                }
+                                // avatars[i]}
+                                player={gameData.players[i]}
                                 position={pos}
-                                isActive={i === playerIndex}
+                                isActive={
+                                    // show the player is active if its their turn
+                                    gameState?.gamePhase ===
+                                        GamePhase.Playing ||
+                                    gameState?.gamePhase ===
+                                        GamePhase.WaitingForSevenMove
+                                        ? i === gameState.activePlayerIndex
+                                        : false
+                                }
+                                isMe={i === playerIndex}
                                 color={COLORS[i]}
                             />
                         ))}
@@ -474,17 +503,37 @@ const Board = ({
                                 }}
                             />
                         )}
-                        {isActive && (
-                            <Button
-                                pointerEvents={"auto"}
-                                position="absolute"
-                                bottom="30%"
-                                colorScheme="red"
-                                m={0}
-                                onClick={fold}
-                            >
-                                Fold
-                            </Button>
+                        {gameState?.gamePhase === GamePhase.Playing &&
+                            isActive && (
+                                <Button
+                                    pointerEvents={"auto"}
+                                    position="absolute"
+                                    bottom="30%"
+                                    colorScheme="red"
+                                    m={0}
+                                    onClick={fold}
+                                >
+                                    Fold
+                                </Button>
+                            )}
+                        {gameState?.gamePhase === GamePhase.Swapping && (
+                            <>
+                                <Popup
+                                    top="30%"
+                                    text={`Choose a card to exchange with your team mate`}
+                                />
+                                <Button
+                                    pointerEvents={"auto"}
+                                    position="absolute"
+                                    bottom="30%"
+                                    colorScheme="teal"
+                                    m={0}
+                                    onClick={swap}
+                                    disabled={selectedCard === null}
+                                >
+                                    Choose card
+                                </Button>
+                            </>
                         )}
                     </Box>
                 </>
