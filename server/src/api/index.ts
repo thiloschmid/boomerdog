@@ -1,13 +1,11 @@
-import express, { response } from "express";
+import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
 import { Server } from "socket.io";
 import { createServer } from "http";
-import config from "config";
 
 import { emitGameList, registerGameHandler } from "./handlers/game_handler.js";
-import { green, red, yellow } from "./utils/colors.js";
-// import { registerUserHandler } from "./handlers/user_handler.js";
+import { green, red } from "./utils/colors.js";
 import { SocketIoServer, ServerSocket } from "./types.js";
 import { UserId, User } from "boomerdog-types";
 import { registerCardHandler } from "./handlers/card_handler.js";
@@ -77,32 +75,37 @@ const onConnection = async (socket: ServerSocket) => {
             socket.join(user.gameId);
         }
     } else {
-        // fetch user data
-        const response = await fetch("https://api.github.com/user", {
-            method: "get",
-            headers: { Authorization: `token ${token}` },
-        });
+        try {
+            // fetch user data
+            const response = await fetch("https://api.github.com/user", {
+                method: "get",
+                headers: { Authorization: `token ${token}` },
+            });
 
-        const data = (await response.json()) as {
-            id: number;
-            avatar_url: string;
-            name: string;
-        };
+            const data = (await response.json()) as {
+                id: number;
+                avatar_url: string;
+                name: string;
+            };
 
-        if (!data) {
-            console.warn(`Unable to authenticate token ${token}`);
+            if (!data) {
+                console.warn(`Unable to authenticate token ${token}`);
+                return;
+            }
+
+            // create User
+
+            user = {
+                name: data.name,
+                userId: `${data.id}`,
+                avatarUrl: data.avatar_url,
+            };
+            userMap.set(user.userId, user);
+            tokenMap.set(token, user.userId);
+        } catch (e) {
+            console.error(e);
             return;
         }
-
-        // create User
-
-        user = {
-            name: data.name,
-            userId: `${data.id}`,
-            avatarUrl: data.avatar_url,
-        };
-        userMap.set(user.userId, user);
-        tokenMap.set(token, user.userId);
     }
 
     socket.join(user.userId); // join a user-specific room
@@ -137,16 +140,23 @@ app.get("/token", async function (req, res) {
 
     const code = req.query.code;
 
-    const response = await fetch(`${oauth_url}/${code}`);
-    const data = (await response.json()) as { token: string };
+    try {
+        const response = await fetch(`${oauth_url}/${code}`);
+        const data = (await response.json()) as { token: string };
 
-    if (data && data.token) {
-        res.send({ status: 0, token: `${data.token}` });
-    } else {
-        res.send({
-            status: 1,
-            message: "Unable to authenticate with github",
-        });
+        if (data && data.token) {
+            res.send({ status: 0, token: `${data.token}` });
+            return;
+        } else {
+            res.send({
+                status: 1,
+                message: "Unable to authenticate with github",
+            });
+            return;
+        }
+    } catch (e) {
+        console.error(e);
+        res.send({ status: 1, message: "Error fetching resource" });
     }
 });
 
