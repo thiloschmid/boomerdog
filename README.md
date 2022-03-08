@@ -1,5 +1,17 @@
 ## Setup
 
+### Local development
+
+1. Run the backend
+
+    cd server && npm run develop
+
+2. Run the client
+
+    cd client && npm start
+
+If authenticating over github, gatekeeper needs to be running too.
+
 ### Running nodemon
 
 The default combination of nodemon and ts-node does not like esm import syntax, therefore another loader is used in the `npm start` script
@@ -10,9 +22,9 @@ The default combination of nodemon and ts-node does not like esm import syntax, 
 
 To be able to use the common types in both `client` and `server` directories, the `boomerdog-types` package has to be packed via
 
-    npm pack 
+    npm pack
 
-in `boomerdog/types`. Then it can be copied into both `client` and `server` and installed via 
+in `boomerdog/types`. Then it can be copied into both `client` and `server` and installed via
 
     npm i ./boomerdog-types-1.0.0.tgz
 

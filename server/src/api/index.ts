@@ -177,6 +177,14 @@ app.get("/token", async function (req, res) {
     }
 });
 
+app.get("/clear_games", () => {
+    console.log("Clearing games");
+
+    gamesMap.clear();
+    userMap.clear();
+    tokenMap.clear();
+});
+
 const port = process.env.PORT || 3002;
 httpServer.listen(port);
 console.info(`Listening on port ${port}...`);
