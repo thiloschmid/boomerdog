@@ -487,7 +487,9 @@ const Board = ({
                                       moves !== null &&
                                       moves.map(
                                           (move, i) =>
-                                              move && renderMove(move, i)
+                                              move &&
+                                              isActive &&
+                                              renderMove(move, i)
                                       )
                               )}
 
