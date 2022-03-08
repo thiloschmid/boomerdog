@@ -266,9 +266,13 @@ export default class Board {
 
             // handle switcheroos
             case 14:
-                return this.getSwitchCandidates(p).map((n) => [
-                    n + SWAP_MOVE_OFFSET,
-                ]);
+                if (this.isRegularIndex(n) && this.nodes[n] > this.nPlayers) {
+                    return this.getSwitchCandidates(p).map((n) => [
+                        n + SWAP_MOVE_OFFSET,
+                    ]);
+                } else {
+                    return [];
+                }
 
             case 71:
             case 72:

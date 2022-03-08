@@ -366,10 +366,6 @@ export default class BoomerDogHandler extends BoomerDog {
         return { status: 0 };
     }
 
-    computeMoveWeight(move: number[]) {
-        return 1;
-    }
-
     orderMoves(allMoves: CardMoves[]) {
         /*
         Returns an 4-tuple for every possible move. 
@@ -471,5 +467,9 @@ export default class BoomerDogHandler extends BoomerDog {
         // only end the turn when not waiting for the seven moves to
         // complete
         this.endTurn();
+    }
+
+    computeMoveWeight(move: number[]) {
+        return 1;
     }
 }
