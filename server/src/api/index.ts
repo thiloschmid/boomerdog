@@ -150,7 +150,7 @@ app.get("/token", async function (req, res) {
     }
 });
 
-const port = process.env.port || 3002;
+const port = process.env.PORT || 3002;
 httpServer.listen(port);
 console.info(`Listening on port ${port}...`);
 
