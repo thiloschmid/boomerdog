@@ -128,11 +128,16 @@ const onConnection = async (socket: ServerSocket) => {
 
 app.use(cors());
 app.get("/token", async function (req, res) {
-    const proxy_url = "http://localhost:9999/authenticate";
+    // exchange the code for an access token
+    // use the gatekeeper proxy for local development
+    const oauth_url =
+        process.env.NODE_ENV === "production"
+            ? "https://github.com/login/oauth/access_token"
+            : "http://localhost:9999/authenticate";
 
     const code = req.query.code;
 
-    const response = await fetch(`${proxy_url}/${code}`);
+    const response = await fetch(`${oauth_url}/${code}`);
     const data = (await response.json()) as { token: string };
 
     if (data && data.token) {
@@ -145,7 +150,8 @@ app.get("/token", async function (req, res) {
     }
 });
 
-httpServer.listen(config.get("server.port"));
-console.info(`Listening on port ${config.get("server.port")}...`);
+const port = process.env.port || 3002;
+httpServer.listen(port);
+console.info(`Listening on port ${port}...`);
 
 io.on("connection", onConnection);
