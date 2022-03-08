@@ -3,12 +3,12 @@ import {
     chakra,
     keyframes,
     AspectRatio,
-    Text,
-    Flex,
     Box,
-    CloseButton,
     useColorModeValue,
     Button,
+    Radio,
+    RadioGroup,
+    Stack,
 } from "@chakra-ui/react";
 
 import { cardToSvg } from "../cards/cards";
@@ -31,7 +31,6 @@ const SWAP_MOVE_OFFSET = 300; // same for swaps
 
 const RADIUS = { inner: 12, outer: 20 };
 export const BOARD_SIZE = { height: 800, width: 800 };
-const STROKE_WIDTH = ".2em";
 const NODE_COLORS = ["gray.600", "gray.200"];
 const SELECTION_COLOR = "teal.400";
 
@@ -67,13 +66,12 @@ export interface BoardProps {
     marbleLocations: number[][]; // [cards][marbles][moves]
     stack: CardBase[];
     possibleMoves: CardMoves[];
-    selectedCard: number | null;
+    selectedCardIndex: number | null;
+    cards: (CardBase | null)[];
     isActive: boolean;
     playerIndex: number;
     stepsRemaining: number | null; // only relevant for the 7️⃣ card
     remainingMoves: MarbleMoves[];
-    // onNodeClick: (n: number) => void;
-    // onMarbleClick: (m: number) => void;
     moveSelected: (m: number, t: number) => void;
     moveRemaining: (m: number, t: number) => void;
     fold: () => void;
@@ -86,7 +84,8 @@ const Board = ({
     marbleLocations,
     stack,
     possibleMoves,
-    selectedCard,
+    selectedCardIndex,
+    cards,
     isActive,
     playerIndex,
     stepsRemaining,
@@ -106,8 +105,8 @@ const Board = ({
     const [showMove, setShowMove] = React.useState<number | null>(null);
     const [selectedMarble, setSelectedMarble] =
         React.useState<number | null>(null);
+    const [jokerMove, setJokerMove] = React.useState<string>("regular"); // "swap" | "seven" | "regular"
 
-    const nodeClicked = (n: number) => {};
     const marbleClicked = (m: number) => {
         if (stepsRemaining) {
             // handle seven card
@@ -121,11 +120,11 @@ const Board = ({
             }
         } else {
             // handle regular moves
-            if (selectedCard !== null) {
-                if (possibleMoves[selectedCard][m].length > 1) {
+            if (selectedCardIndex !== null) {
+                if (possibleMoves[selectedCardIndex][m].length > 1) {
                     setPopoverIsOpen(true);
                     setSelectedMarble(m);
-                } else if (possibleMoves[selectedCard][m][0]) {
+                } else if (possibleMoves[selectedCardIndex][m][0]) {
                     moveSelected(m, 0);
                     setShowMove(null);
                     setSelectedMarble(null);
@@ -154,7 +153,6 @@ const Board = ({
         // for 4 players: 0 to 3 corresponds to being occupied by the corresponding
         // player 4 means unoccupied
         <chakra.circle
-            onClick={() => nodeClicked(data.id)}
             stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
             strokeWidth={".3em"}
             fillOpacity="0"
@@ -278,12 +276,17 @@ const Board = ({
         />
     );
 
-    const PossibleMovePathMarker = (data: {
-        x: number;
-        y: number;
-        r?: number;
-    }) => (
+    interface PossibleMoveMarkerProps {
+        isVisible: boolean;
+        data: { x: number; y: number; id: number; r?: number; index?: number };
+    }
+    const PossibleMovePathMarker = ({
+        isVisible,
+        data,
+    }: PossibleMoveMarkerProps) => (
         <chakra.circle
+            visibility={isVisible ? "visible" : "hidden"}
+            pointerEvents={isVisible ? "auto" : "none"}
             fill={SELECTION_COLOR}
             cx={data.x}
             cy={data.y}
@@ -292,24 +295,15 @@ const Board = ({
         />
     );
 
-    const PossibleMoveTargetMarker = (
-        data: { x: number; y: number; i: number },
-        killable: boolean
-    ) => (
-        <g transform={`translate(${data.x},${data.y})`}>
-            <chakra.circle
-                // stroke={"teal.400"}
-                // strokeWidth={".3em"}
-                fill={SELECTION_COLOR}
-                opacity={0}
-                onClick={() => targetClicked(data.i)}
-                // cx={data.x}
-                // cy={data.y}
-                cursor="pointer"
-                cx={0}
-                cy={0}
-                r={RADIUS.outer}
-            />
+    const PossibleMoveTargetMarker = ({
+        isVisible,
+        data,
+    }: PossibleMoveMarkerProps) => (
+        <g
+            transform={`translate(${data.x},${data.y})`}
+            visibility={isVisible ? "data." : "hidden"}
+            pointerEvents={isVisible ? "auto" : "none"}
+        >
             <chakra.circle
                 stroke={SELECTION_COLOR}
                 strokeWidth={"0"}
@@ -321,39 +315,77 @@ const Board = ({
                 r={RADIUS.inner}
                 animation={pulseAnimation}
             />
+            <chakra.circle
+                // stroke={"teal.400"}
+                // strokeWidth={".3em"}
+                fill={SELECTION_COLOR}
+                opacity={0}
+                onClick={() => data.index && targetClicked(data.index)}
+                // cx={data.x}
+                // cy={data.y}
+                cursor="pointer"
+                cx={0}
+                cy={0}
+                r={RADIUS.outer + 3}
+            />
         </g>
     );
 
+    const moveShouldBeShown = (move: number[]) => {
+        if (
+            selectedCardIndex !== null &&
+            cards[selectedCardIndex]?.value === 0
+        ) {
+            if (move[0] >= SEVEN_MOVE_OFFSET) {
+                return jokerMove === "seven";
+            } else if (move[0] >= SWAP_MOVE_OFFSET) {
+                console.log(move[0]);
+                return jokerMove === "swap";
+            } else {
+                return jokerMove === "regular";
+            }
+        }
+        return true;
+    };
+
     const renderMove = (move: number[], i: number) => {
+        const isVisible = moveShouldBeShown(move);
         if (move[0] === -1) {
             move = [move[1]];
         } else if (move[0] >= SEVEN_MOVE_OFFSET) {
             // a move with a 7
             move = move.map((n) => n - SEVEN_MOVE_OFFSET);
         } else if (move[0] >= SWAP_MOVE_OFFSET) {
-            move[0] = move[0] - SWAP_MOVE_OFFSET;
+            move = [move[0] - SWAP_MOVE_OFFSET];
         }
         return (
             <React.Fragment key={`${i}`}>
                 {move !== null &&
                     move.map((n, j) => (
                         <PossibleMovePathMarker
-                            key={`move-path-${j}-${n}`}
-                            {...getCoords(n)}
+                            key={`path-marker-${i}-${j}`}
+                            {...{
+                                data: getCoords(n),
+                                isVisible: isVisible,
+                            }}
                         />
                     ))}
                 {move !== null && (
                     <PossibleMoveTargetMarker
                         key={`target-marker ${i}`}
                         {...{
-                            i,
-                            ...getCoords(move[move.length - 1]),
+                            data: {
+                                ...getCoords(move[move.length - 1]),
+                                index: i,
+                            },
+                            isVisible: isVisible,
                         }}
                     />
                 )}
             </React.Fragment>
         );
     };
+
     return (
         <Box>
             <AspectRatio
@@ -445,9 +477,10 @@ const Board = ({
                                               move && renderMove(move, i)
                                       )
                               )
-                            : selectedCard !== null &&
-                              possibleMoves[selectedCard] !== null &&
-                              possibleMoves[selectedCard]!.map(
+                            : possibleMoves?.length &&
+                              selectedCardIndex !== null &&
+                              possibleMoves[selectedCardIndex] !== null &&
+                              possibleMoves[selectedCardIndex]!.map(
                                   (moves, m) =>
                                       (showMove === m ||
                                           selectedMarble === m) &&
@@ -529,12 +562,35 @@ const Board = ({
                                     colorScheme="teal"
                                     m={0}
                                     onClick={swap}
-                                    disabled={selectedCard === null}
+                                    disabled={selectedCardIndex === null}
                                 >
                                     Choose card
                                 </Button>
                             </>
                         )}
+                        {isActive &&
+                            selectedCardIndex !== null &&
+                            cards[selectedCardIndex]?.value === 0 && (
+                                <>
+                                    <Popup top="30%" text={`Specify move`}>
+                                        <RadioGroup
+                                            onChange={setJokerMove}
+                                            value={jokerMove}
+                                        >
+                                            <Stack
+                                                direction="row"
+                                                pointerEvents="auto"
+                                            >
+                                                <Radio value="regular">
+                                                    Regular/out
+                                                </Radio>
+                                                <Radio value="swap">Swap</Radio>
+                                                <Radio value="seven">7</Radio>
+                                            </Stack>
+                                        </RadioGroup>
+                                    </Popup>
+                                </>
+                            )}
                     </Box>
                 </>
             </AspectRatio>

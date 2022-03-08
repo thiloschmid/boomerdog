@@ -7,16 +7,17 @@ import {
 } from "@chakra-ui/react";
 
 interface PopupProps {
+    children?: JSX.Element;
     text: string;
     top: string;
     close?: () => void;
 }
 
-const Popup = ({ text, close, top }: PopupProps) => (
+const Popup = ({ children, text, close, top }: PopupProps) => (
     <Box
         borderRadius="md"
         p=".5em"
-        pr={close? "2em" : ".5em"}
+        pr={close ? "2em" : ".5em"}
         bg={useColorModeValue("white", "gray.900")}
         pointerEvents="none"
         position="absolute"
@@ -30,6 +31,7 @@ const Popup = ({ text, close, top }: PopupProps) => (
     >
         {/* // <div style={{display: "block", position: "absolute", backgroundColor:"red", width: "max-content", height:"max-content"}}> */}
         <Text>{text}</Text>
+        {children}
         {close && (
             <CloseButton
                 position="absolute"

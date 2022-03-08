@@ -21,7 +21,8 @@ interface BoardWrapperProps {
     isActive: boolean;
     playerIndex: number;
     stepsRemaining: number | null; // only relevant for the 7️⃣ card
-    selectedCard: number | null;
+    selectedCardIndex: number | null;
+    cards: (CardBase | null)[];
     deselectCard: () => void;
     stack: CardBase[];
     fold: () => void;
@@ -34,7 +35,8 @@ const BoardWrapper = ({
     socket,
     isActive,
     playerIndex,
-    selectedCard,
+    selectedCardIndex,
+    cards,
     deselectCard,
     stack,
     stepsRemaining,
@@ -70,13 +72,13 @@ const BoardWrapper = ({
 
     const moveSelected = (m: number, mi: number) => {
         socket &&
-            selectedCard !== null &&
+            selectedCardIndex !== null &&
             socket.emit(
                 "game:perform_move",
                 {
                     userId: player.userId,
                     gameId: gameData.gameId,
-                    c: selectedCard,
+                    c: selectedCardIndex,
                     m: m,
                     mi: mi,
                 },
@@ -108,10 +110,10 @@ const BoardWrapper = ({
 
     const swap = () => {
         socket &&
-            selectedCard !== null &&
+            selectedCardIndex !== null &&
             socket.emit(
                 "game:swap_card",
-                selectedCard,
+                selectedCardIndex,
                 (response: IoResponse) => {
                     {
                         if (response.status) {
@@ -146,7 +148,8 @@ const BoardWrapper = ({
                 gameState,
                 marbleLocations,
                 possibleMoves,
-                selectedCard,
+                selectedCardIndex,
+                cards,
                 isActive,
                 playerIndex,
                 onNodeClick,

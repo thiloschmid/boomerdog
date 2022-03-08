@@ -204,8 +204,6 @@ export default class BoomerDogHandler extends BoomerDog {
             // AI opponent
             setTimeout(() => {
                 this.aiMoves();
-                this.emitBoardData();
-                this.endTurn();
             }, 1000);
         }
     }
@@ -213,8 +211,11 @@ export default class BoomerDogHandler extends BoomerDog {
     endTurn() {
         super.finalizeTurn();
 
+        this.emitBoardData();
+
         if (super.gameIsFinished()) {
             // never happens
+            return;
         }
         if (super.roundIsFinished()) {
             this.endRound();
@@ -291,10 +292,10 @@ export default class BoomerDogHandler extends BoomerDog {
 
         if (!response.status) {
             this.emitCards(activePlayer.userId);
-            this.emitBoardData();
-            this.emitGameState();
 
             if (this.gamePhase === GamePhase.WaitingForSevenMove) {
+                this.emitBoardData();
+                this.emitGameState();
                 this.emitRemainingMoves();
             } else {
                 // only end the turn when not waiting for the seven moves to
@@ -341,11 +342,6 @@ export default class BoomerDogHandler extends BoomerDog {
                 // complete
                 this.endTurn();
             }
-        } else if (response.status === 7) {
-            this.emitCards(activePlayer.userId);
-            this.emitBoardData();
-            this.emitGameState();
-            this.emitPossibleMoves();
         }
 
         return response;
@@ -374,7 +370,7 @@ export default class BoomerDogHandler extends BoomerDog {
         return 1;
     }
 
-    flattenMoves(allMoves: CardMoves[]) {
+    orderMoves(allMoves: CardMoves[]) {
         /*
         Returns an 4-tuple for every possible move. 
         [card index, marble index, move index, move weight]
@@ -402,7 +398,7 @@ export default class BoomerDogHandler extends BoomerDog {
         return movesList;
     }
 
-    flattenRemainingMoves(allMoves: MarbleMoves[]) {
+    orderRemainingMoves(allMoves: MarbleMoves[]) {
         const movesList = [];
 
         for (let m = 0; m < allMoves.length; m++) {
@@ -424,31 +420,56 @@ export default class BoomerDogHandler extends BoomerDog {
     aiMoves() {
         console.log(`${green(`Select AI ${this.activePlayerIndex} move`)}`);
         const allMoves = super.getPossibleMoves();
-        const movesList = this.flattenMoves(allMoves);
+        const movesList = this.orderMoves(allMoves);
 
         if (!movesList.length) {
             super.fold();
+            this.endTurn();
             return;
         }
 
         const bestMove = movesList[0];
 
-        console.log(bestMove);
+        const response = super.performMove(
+            bestMove.card,
+            bestMove.marble,
+            bestMove.move
+        );
 
-        super.performMove(bestMove.card, bestMove.marble, bestMove.move);
+        if (response.status) {
+            console.warn(response.message);
+        } else {
+            this.emitBoardData();
+            this.emitGameState();
 
-        if (this.gamePhase === GamePhase.WaitingForSevenMove) {
-            const remainingMoves = super.getRemainingMoves();
+            const currentGamePhase = this.gamePhase;
+            if (currentGamePhase === GamePhase.WaitingForSevenMove) {
+                console.log(`waiting for seven?`);
+                for (let i = 0; i < 7; i++) {
+                    if (this.gamePhase === GamePhase.Playing) {
+                        break;
+                    }
 
-            if (remainingMoves === null) {
-                console.error(red(`No remaining moves found`));
-                return;
+                    const remainingMoves = super.getRemainingMoves();
+
+                    if (remainingMoves === null) {
+                        console.error(red(`No remaining moves found`));
+                        return;
+                    }
+                    const remainingMovesList =
+                        this.orderRemainingMoves(remainingMoves);
+
+                    const bestRem = remainingMovesList[0];
+                    super.performRemainingMove(bestRem.marble, bestRem.move);
+
+                    this.emitBoardData();
+                    this.emitGameState();
+                }
             }
-            const remainingMovesList =
-                this.flattenRemainingMoves(remainingMoves);
-
-            const bestRem = remainingMovesList[0];
-            super.performRemainingMove(bestRem.marble, bestRem.move);
         }
+
+        // only end the turn when not waiting for the seven moves to
+        // complete
+        this.endTurn();
     }
 }

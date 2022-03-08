@@ -178,7 +178,8 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
                                                   null
                                                 : null
                                         }
-                                        selectedCard={selectedCard}
+                                        selectedCardIndex={selectedCard}
+                                        cards={cards}
                                         deselectCard={() =>
                                             setSelectedCard(null)
                                         }

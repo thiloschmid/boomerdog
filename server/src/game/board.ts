@@ -425,10 +425,13 @@ export default class Board {
 
     getSwitchCandidates(p: number) {
         const switchCandidates = [];
-        for (let p = 0; p < this.nPlayers; p++) {
+        for (let p2 = 0; p2 < this.nPlayers; p2++) {
+            if (p === p2) {
+                continue;
+            }
             for (let m = 0; m < 4; m++) {
-                const n = this.marbleLocations[p][m];
-                if (this.isRegularIndex(n) && this.nodes[n] === p) {
+                const n = this.marbleLocations[p2][m];
+                if (this.isRegularIndex(n) && this.nodes[n] === p2) {
                     switchCandidates.push(n);
                 }
             }

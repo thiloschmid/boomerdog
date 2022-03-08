@@ -104,7 +104,11 @@ export default class BoomerDog {
             const c = this.swapCards[p];
             const p2 = p + this.nPlayers / 2;
             const c2 = this.swapCards[p2];
-            this.deck.hands[p][c] = this.deck.hands[p2][c2];
+            // swap the cards
+            [this.deck.hands[p][c], this.deck.hands[p2][c2]] = [
+                this.deck.hands[p2][c2],
+                this.deck.hands[p][c],
+            ];
         }
 
         this.swapCards = [-1, -1, -1, -1];
@@ -239,46 +243,22 @@ export default class BoomerDog {
             )}`
         );
 
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+        this.deck.cardPlayed(this.activePlayerIndex, c);
+
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
         if (moves[mi][0] >= SEVEN_MOVE_OFFSET) {
-            // if it is the first action with the seven card, make sure that
-            // the seven moves can be completed ⚠️
-            if (
-                this.remainderForSevenCard === 7 &&
-                !this.board.playerCanCompleteSeven(this.activePlayerIndex)
-            ) {
-                return {
-                    status: 1,
-                    message: "Player can't complete seven moves",
-                };
-            }
-
-            if (moves[mi].length > this.remainderForSevenCard) {
-                console.error("Invalid move, not enough moves left");
-                return {
-                    status: 1,
-                    message: "Invalid move, not enough moves left",
-                };
-            }
+            console.log(`seven-move`)
             this.remainderForSevenCard -= moves[mi].length;
 
             if (this.remainderForSevenCard) {
                 this.gamePhase = GamePhase.WaitingForSevenMove;
                 this.computeRemainingMoves();
-
                 return { status: 0 };
             } else {
                 this.gamePhase = GamePhase.Playing;
                 this.remainderForSevenCard = 7; // reset to previous value
             }
-        }
-
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
-
-        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
-            // this is always the case except if a seven move is performed and
-            // the card has already been played
-            this.deck.cardPlayed(this.activePlayerIndex, c);
         }
 
         // check if the player is finished playing
@@ -294,7 +274,7 @@ export default class BoomerDog {
         }
         const moves = this.remainingMoves[m];
         console.log(
-            `${blue(`Player moves [${moves?.[mi]} from a seven card`)}`
+            `${blue(`Player moves ${moves?.[mi]} from a seven card`)}`
         );
 
         this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
