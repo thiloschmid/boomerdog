@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
+import axios from "axios";
 import { Server } from "socket.io";
 import { createServer } from "http";
 
@@ -77,16 +77,17 @@ const onConnection = async (socket: ServerSocket) => {
     } else {
         try {
             // fetch user data
-            const response = await fetch("https://api.github.com/user", {
-                method: "get",
-                headers: { Authorization: `token ${token}` },
-            });
+            const data = (
+                await axios.get("https://api.github.com/user", {
+                    headers: { Authorization: `token ${token}` },
+                })
+            ).data;
 
-            const data = (await response.json()) as {
-                id: number;
-                avatar_url: string;
-                name: string;
-            };
+            // const data = (await response.json()) as {
+            //     id: number;
+            //     avatar_url: string;
+            //     name: string;
+            // };
 
             if (!data) {
                 console.warn(`Unable to authenticate token ${token}`);
@@ -132,31 +133,47 @@ const onConnection = async (socket: ServerSocket) => {
 app.use(cors());
 app.get("/token", async function (req, res) {
     // exchange the code for an access token
-    // use the gatekeeper proxy for local development
-    const oauth_url =
-        process.env.NODE_ENV === "production"
-            ? "https://github.com/login/oauth/access_token"
-            : "http://localhost:9999/authenticate";
-
     const code = req.query.code;
+    let token;
 
-    try {
-        const response = await fetch(`${oauth_url}/${code}`);
-        const data = (await response.json()) as { token: string };
-
-        if (data && data.token) {
-            res.send({ status: 0, token: `${data.token}` });
-            return;
-        } else {
-            res.send({
-                status: 1,
-                message: "Unable to authenticate with github",
+    if (process.env.NODE_ENV === "production") {
+        try {
+            const response = await axios({
+                method: "post",
+                url: `https://github.com/login/oauth/access_token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}`,
+                headers: {
+                    accept: "application/json",
+                },
             });
+            token = response.data.access_token;
+        } catch (err) {
+            console.error(err);
+            res.send({ status: 1, message: "Error fetching token" });
             return;
         }
-    } catch (e) {
-        console.error(e);
-        res.send({ status: 1, message: "Error fetching resource" });
+    } else {
+        // use the gatekeeper proxy for local development
+        const proxy_url = "http://localhost:9999/authenticate";
+
+        try {
+            const response = (await axios.get(`${proxy_url}/${code}`)) as {
+                data: {
+                    token: string;
+                };
+            };
+            token = response.data.token;
+        } catch (e) {
+            console.error(e);
+            res.send({ status: 1, message: "Error fetching token" });
+        }
+    }
+    if (token) {
+        res.send({ status: 0, token: `${token}` });
+    } else {
+        res.send({
+            status: 1,
+            message: "Unable to authenticate with github",
+        });
     }
 });
 
