@@ -111,11 +111,11 @@ const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
                                     w={{ base: "2em", md: "3em" }}
                                 />
                             </Box>
-                            {useBreakpointValue({ base: false, md: true }) && (
+                            {/* {useBreakpointValue({ base: false, md: true }) && (
                                 <Heading p={0} m={0} color="cyan.700">
-                                    Boomer Dog
+                                    BoomerDog
                                 </Heading>
-                            )}
+                            )} */}
                             {/* <HStack
                             as={"nav"}
                             spacing={4}
@@ -131,7 +131,9 @@ const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
                                 alignItems={"center"}
                                 display={{ base: "none", md: "flex" }}
                             >
-                                <ConnectionIndicator {...{ isConnected }} />
+                                {isLoggedIn && (
+                                    <ConnectionIndicator {...{ isConnected }} />
+                                )}
                                 {isLoggedIn ? (
                                     <Button
                                         onClick={logout}

@@ -24,6 +24,9 @@ import {
 } from "boomerdog-types";
 import Popup from "./popup";
 
+import { BoardNode, EndzoneNode, BaseNode, Outline, RADIUS } from "./nodes";
+import { StackIcon } from "./icons";
+
 // ⚠️ This has to be consistent with the backend!
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
 // the node index
@@ -31,22 +34,21 @@ const SEVEN_MOVE_OFFSET = 1000;
 // same for swaps
 const SWAP_MOVE_OFFSET = 300;
 
-const RADIUS = { inner: 12, outer: 20 };
 export const BOARD_SIZE = { height: 800, width: 800 };
-const NODE_COLORS = ["gray.600", "gray.200"];
 const SELECTION_COLOR = "teal.400";
 
+const playerBoxSize = { height: 100, width: 130 };
 const avatarPositions = [
-    { x: BOARD_SIZE.width - avatarSize - 10, y: 10 },
+    { x: BOARD_SIZE.width - playerBoxSize.width - 10, y: 10 },
     { x: 10, y: 10 },
-    { x: 10, y: BOARD_SIZE.height - avatarSize - 10 },
+    { x: 10, y: BOARD_SIZE.height - playerBoxSize.height - 10 },
     {
-        x: BOARD_SIZE.width - avatarSize - 10,
-        y: BOARD_SIZE.height - avatarSize - 10,
+        x: BOARD_SIZE.width - playerBoxSize.width - 10,
+        y: BOARD_SIZE.height - playerBoxSize.height - 10,
     },
 ];
 
-const COLORS = ["red", "yellow.400", "green.600", "blue.600"];
+export const COLORS = ["red", "yellow.400", "green.600", "blue.600"];
 
 const pulse = keyframes`
     from {
@@ -65,7 +67,7 @@ const pulseAnimation = `${pulse} infinite 1.5s linear`;
 export interface BoardProps {
     gameData: GameData;
     gameState: GameState | null;
-    marbleLocations: number[][]; 
+    marbleLocations: number[][];
     stack: CardBase[];
     possibleMoves: CardMoves[]; // array [cards][marbles][moves]
     selectedCardIndex: number | null;
@@ -109,6 +111,8 @@ const Board = ({
         React.useState<number | null>(null);
     const [jokerMove, setJokerMove] = React.useState<string>("regular"); // "swap" | "seven" | "regular"
 
+    const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
+
     const marbleClicked = (m: number) => {
         if (stepsRemaining) {
             // handle seven card
@@ -150,22 +154,6 @@ const Board = ({
             setSelectedMarble(null);
         }
     };
-
-    const BoardNode = (data: { id: number; x: number; y: number }) => (
-        // for 4 players: 0 to 3 corresponds to being occupied by the corresponding
-        // player 4 means unoccupied
-        <chakra.circle
-            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
-            strokeWidth={".3em"}
-            fillOpacity="0"
-            key={`${data.id}-${data.x} ${data.y}`}
-            className="step"
-            id={"step-" + data.id}
-            cx={data.x}
-            cy={data.y}
-            r={RADIUS.inner}
-        />
-    );
 
     const getCoords = (
         n: number,
@@ -228,56 +216,6 @@ const Board = ({
         />
     );
 
-    const EndzoneNode = (data: {
-        id: number;
-        x: number;
-        y: number;
-        color: number;
-    }) => (
-        <chakra.circle
-            // stroke={COLORS[data.color]}
-            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
-            strokeWidth={".3em"}
-            fill="none"
-            className="step"
-            key={`endzone-${data.x} ${data.y}`}
-            cx={data.x}
-            cy={data.y}
-            r={RADIUS.inner}
-        />
-    );
-    const BaseNode = (data: {
-        id: number;
-        x: number;
-        y: number;
-        color: number;
-    }) => (
-        <chakra.circle
-            // stroke={COLORS[data.color]}
-            stroke={useColorModeValue(NODE_COLORS[0], NODE_COLORS[1])}
-            strokeWidth={".3em"}
-            fill="none"
-            className="step"
-            key={`base-${data.x} ${data.y}`}
-            cx={data.x}
-            cy={data.y}
-            r={RADIUS.inner}
-        />
-    );
-
-    const Outline = (data: { x: number; y: number; color: number }) => (
-        <chakra.circle
-            stroke={COLORS[data.color]}
-            strokeWidth={".3em"}
-            fill="none"
-            className={"out out-" + data.color}
-            key={`outline-${data.x} ${data.y}`}
-            cx={data.x}
-            cy={data.y}
-            r={RADIUS.outer}
-        />
-    );
-
     interface PossibleMoveMarkerProps {
         isVisible: boolean;
         data: { x: number; y: number; id: number; r?: number; index?: number };
@@ -315,21 +253,14 @@ const Board = ({
                 stroke={SELECTION_COLOR}
                 strokeWidth={"0"}
                 fill="none"
-                // cx={data.x}
-                // cy={data.y}
                 cx={0}
                 cy={0}
                 r={RADIUS.inner}
                 animation={pulseAnimation}
             />
             <chakra.circle
-                // stroke={"teal.400"}
-                // strokeWidth={".3em"}
-                fill={SELECTION_COLOR}
                 opacity={0}
                 onClick={() => targetClicked(data.index)}
-                // cx={data.x}
-                // cy={data.y}
                 cursor="pointer"
                 cx={0}
                 cy={0}
@@ -410,14 +341,21 @@ const Board = ({
                         {avatarPositions.map((pos, i) => (
                             <BoomerdogAvatar
                                 key={`avatar-${i}`}
+                                size={playerBoxSize}
                                 avatarUrl={
                                     i < gameData.players.length
                                         ? gameData.players[i].avatarUrl
                                         : "/dog.jpg"
                                 }
-                                // avatars[i]}
+                                swapIcon={{
+                                    show:
+                                        gameState?.gamePhase ===
+                                        GamePhase.Swapping,
+                                    swapCompleted: !!gameState?.hasSwapped[i],
+                                }}
+                                hasFolded={gameState?.hasFolded[i]}
                                 player={gameData.players[i]}
-                                position={pos}
+                                position={{ ...pos, index: i }}
                                 isActive={
                                     // show the player is active if its their turn
                                     gameState?.gamePhase ===
@@ -429,9 +367,30 @@ const Board = ({
                                 }
                                 isMe={i === playerIndex}
                                 color={COLORS[i]}
+                                cardsIcon={{
+                                    show:
+                                        gameState?.gamePhase ===
+                                            GamePhase.Playing &&
+                                        !gameState?.hasFolded[i],
+                                    number:
+                                        (gameState?.numberOfCards &&
+                                            gameState.numberOfCards[i]) ||
+                                        0,
+                                }}
                             />
                         ))}
-
+                        {/* draw the stack indicating the next player to start */}
+                        {gameState && (
+                            <g
+                                transform={`translate(${
+                                    ["760,200", "200,10", "10,570", "570,760"][
+                                        gameState.playerStartingNext
+                                    ]
+                                })`}
+                            >
+                                <StackIcon color={iconColor} size={30} />
+                            </g>
+                        )}
                         {/* build steps for the path around the board */}
                         {boardNodes.nodes.map((data) => (
                             <BoardNode
@@ -439,14 +398,14 @@ const Board = ({
                                 {...data}
                             />
                         ))}
-                        {/* draw homes */}
+                        {/* draw bases */}
                         {boardNodes.bases.map((data) => (
                             <BaseNode
                                 key={`basenode-${data.x}-${data.y}`}
                                 {...data}
                             />
                         ))}
-                        {/* draw houses */}
+                        {/* draw endzones */}
                         {boardNodes.endzones.map((data) => (
                             <EndzoneNode
                                 key={`endzonenode-${data.x}-${data.y}`}
@@ -460,6 +419,7 @@ const Board = ({
                                 {...data}
                             />
                         ))}
+                        {/* fill the board with marbles */}
                         {marbleLocations.map((nodes, p) =>
                             nodes.map((n, m) => (
                                 <OccupiedNode
@@ -473,6 +433,7 @@ const Board = ({
                                 />
                             ))
                         )}
+                        {/* if a seven card was played, show remaining steps */}
                         {stepsRemaining
                             ? remainingMoves.map(
                                   (moves, m) =>
@@ -481,7 +442,7 @@ const Board = ({
                                       moves !== null &&
                                       moves.map(
                                           (move, i) =>
-                                              move && renderMove(move, i)
+                                              move && renderMove(move.nodes, i)
                                       )
                               )
                             : possibleMoves?.length &&
@@ -496,10 +457,10 @@ const Board = ({
                                           (move, i) =>
                                               move &&
                                               isActive &&
-                                              renderMove(move, i)
+                                              renderMove(move.nodes, i)
                                       )
                               )}
-
+                        {/* show the card stack */}
                         {stack.map((card, i) =>
                             i === stack.length - 1 ? (
                                 // render the top card
@@ -528,6 +489,7 @@ const Board = ({
                             )
                         )}
                     </svg>
+                    {/* Render dialogs 📢 */}
                     <Box position="relative" pointerEvents="none">
                         {stepsRemaining !== null && (
                             <Popup
@@ -577,7 +539,9 @@ const Board = ({
                                 </Button>
                             </>
                         )}
+                        {/* Select the joker move */}
                         {isActive &&
+                            gameState?.gamePhase === GamePhase.Playing &&
                             selectedCardIndex !== null &&
                             cards[selectedCardIndex]?.value === 0 && (
                                 <>

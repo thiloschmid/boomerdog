@@ -16,6 +16,7 @@ export default class BoomerDogHandler extends BoomerDog {
     nPlayers: number;
     players: User[];
     hasStarted: boolean;
+    playerStartingNext: number;
 
     constructor(gameId: string, gameName: string, nPlayers: number) {
         super(nPlayers);
@@ -25,6 +26,7 @@ export default class BoomerDogHandler extends BoomerDog {
         this.nPlayers = nPlayers;
         this.players = new Array<User>();
         this.hasStarted = false;
+        this.playerStartingNext = 0;
     }
 
     /* ☎️ EMITTER METHODS
@@ -108,10 +110,13 @@ export default class BoomerDogHandler extends BoomerDog {
         const gameState: GameState = {
             gamePhase: this.gamePhase,
             numberOfDistributedCards: 6 - (this.roundNumber % 5),
+            numberOfCards: this.deck.numberOfCards,
             activePlayerIndex: this.activePlayerIndex,
             activePlayerUserId: activePlayer ? activePlayer.userId : "",
             stack: this.deck.stack,
             hasSwapped: this.swapCards.map((c) => c !== -1),
+            hasFolded: this.hasFolded,
+            playerStartingNext: this.playerStartingNext,
         };
 
         if (this.gamePhase === GamePhase.WaitingForSevenMove) {
@@ -253,6 +258,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (super.swapIsComplete()) {
             super.swap();
             this.emitCards();
+            this.playerStartingNext = this.roundNumber + (1 % this.nPlayers);
             this.startTurn();
         }
         this.emitGameState();
@@ -469,14 +475,19 @@ export default class BoomerDogHandler extends BoomerDog {
         this.endTurn();
     }
 
-    computeMoveWeight(move: number[]) {
+    computeMoveWeight(move: { nodes: number[]; collateral?: number }) {
+        let moveWeight = 0;
         // destination of the move
-        const nNew = move[move.length - 1];
+        const nNew = move.nodes[move.nodes.length - 1];
+        if (move.collateral) {
+            // 💣
+            moveWeight += 10 * move.collateral;
+        }
         if (nNew >= 100) {
             // value entering the endzone higher with the first node yielding
             // the weight 2, and the final node yielding 5
-            return (nNew % 10) + 2;
+            moveWeight += (nNew % 10) + 1;
         }
-        return 1;
+        return moveWeight;
     }
 }

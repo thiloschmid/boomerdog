@@ -7,7 +7,7 @@ import { createServer } from "http";
 import { emitGameList, registerGameHandler } from "./handlers/game_handler.js";
 import { green, red } from "./utils/colors.js";
 import { SocketIoServer, ServerSocket } from "./types.js";
-import { UserId, User } from "boomerdog-types";
+import { User } from "boomerdog-types";
 import { registerCardHandler } from "./handlers/card_handler.js";
 
 import BoomerDogClient from "../game/boomerdogclient.js";
@@ -23,8 +23,8 @@ export const io = new Server(httpServer, {
 }) as SocketIoServer;
 
 // export const socketIdToUserId = new Map<SocketId, UserId>();
-export const userMap = new Map<UserId, User>();
-export const tokenMap = new Map<string, UserId>();
+export const userMap = new Map<string, User>();
+export const tokenMap = new Map<string, string>();
 export const gamesMap = new Map<string, BoomerDogClient>();
 
 export const getUserFromSocket = (socket: ServerSocket) => {

@@ -13,6 +13,8 @@ export default class Deck {
     cards: CardBase[] = Array(this.nCards);
     hands: (CardBase | null)[][];
 
+    numberOfCards: number[];
+
     currentCardIndex = 0;
     stack: CardBase[] = [];
 
@@ -42,6 +44,8 @@ export default class Deck {
                 id++;
             }
         }
+
+        this.numberOfCards = [0, 0, 0, 0];
 
         this.shuffleCards();
         this.hands = Array.from({ length: nPlayers }, (e) =>
@@ -74,6 +78,7 @@ export default class Deck {
                 this.currentCardIndex++;
             }
         }
+        this.numberOfCards = [n, n, n, n];
     }
 
     cardPlayed(p: number, c: number) {
@@ -83,6 +88,7 @@ export default class Deck {
         } else {
             this.stack.push(card);
             this.hands[p][c] = null;
+            this.numberOfCards[p]--;
         }
     }
 
@@ -94,6 +100,7 @@ export default class Deck {
                 this.hands[p][i] = null;
             }
         }
+        this.numberOfCards[p] = 0;
     }
 
     playerHasCards(p: number) {

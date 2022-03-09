@@ -1,9 +1,7 @@
 import * as React from "react";
-import { Button, HStack, Spinner, Stack, Text, VStack } from "@chakra-ui/react";
+import { HStack, Spinner, Stack, Text } from "@chakra-ui/react";
 
 import { CheckCircleIcon } from "@chakra-ui/icons";
-import { BoomerDogSocket } from "../api/socket-client";
-import { User } from "boomerdog-types/user";
 
 export interface ConnectionIndicatorProps {
     isConnected: boolean;

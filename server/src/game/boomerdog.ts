@@ -38,6 +38,7 @@ export default class BoomerDog {
 
     // initially true, becomes false after folding or playing all cards
     isPlaying: boolean[];
+    hasFolded: boolean[];
 
     // store the distance that was moved with a seven card
     remainderForSevenCard;
@@ -58,6 +59,7 @@ export default class BoomerDog {
         this.roundNumber = 0;
 
         this.isPlaying = [true, true, true, true];
+        this.hasFolded = [false, false, false, false];
         this.swapCards = [-1, -1, -1, -1]; // store the card index
 
         this.remainderForSevenCard = 7;
@@ -70,8 +72,13 @@ export default class BoomerDog {
         // first distribute 6 cards, then 5, ..., down to 2 cards
         this.deck.distributeCards(6 - (this.roundNumber % 5));
 
+        this.hasFolded = [false, false, false, false];
+        this.isPlaying = [true, true, true, true];
+
         // set new game phase
         this.gamePhase = GamePhase.Swapping;
+
+        this.activePlayerIndex = this.roundNumber % 4;
     }
 
     setupTurn() {
@@ -113,9 +120,6 @@ export default class BoomerDog {
 
         this.swapCards = [-1, -1, -1, -1];
         this.gamePhase = GamePhase.Playing;
-
-        this.activePlayerIndex = this.roundNumber % 4;
-        this.isPlaying = [true, true, true, true];
     }
 
     moveToNextPlayer() {
@@ -248,7 +252,7 @@ export default class BoomerDog {
 
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
         if (moves[mi].nodes[0] >= SEVEN_MOVE_OFFSET) {
-            console.log(`seven-move`)
+            console.log(`seven-move`);
             this.remainderForSevenCard -= moves[mi].nodes.length;
 
             if (this.remainderForSevenCard) {
@@ -273,9 +277,7 @@ export default class BoomerDog {
             return { status: 1, message: "Remaining moves are not defined" };
         }
         const moves = this.remainingMoves[m];
-        console.log(
-            `${blue(`Player moves ${moves?.[mi]} from a seven card`)}`
-        );
+        console.log(`${blue(`Player moves ${moves?.[mi]} from a seven card`)}`);
 
         this.board.executeMove(this.activePlayerIndex, m, moves[mi].nodes);
 
@@ -315,6 +317,7 @@ export default class BoomerDog {
         console.debug(`${blue(`Player ${this.activePlayerIndex} folds`)}`);
         this.deck.fold(this.activePlayerIndex);
         this.isPlaying[this.activePlayerIndex] = false;
+        this.hasFolded[this.activePlayerIndex] = true;
         return { status: 0 };
     }
 }

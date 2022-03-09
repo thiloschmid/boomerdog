@@ -57,6 +57,8 @@ interface GameState {
     hasSwapped: boolean[];
     hasFolded: boolean[];
     remainingMoves?: number;
+    playerStartingNext: number;
+    numberOfCards?: number[];
 }
 
 export {

@@ -39,6 +39,8 @@ interface GameState {
     hasSwapped: boolean[];
     hasFolded: boolean[];
     remainingMoves?: number;
+    playerStartingNext: number;
+    numberOfCards?: number[];
 }
 export { User, CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
 //# sourceMappingURL=entry.d.ts.map

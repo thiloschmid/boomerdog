@@ -110,7 +110,8 @@ const Login = () => {
                             ) : (
                                 <Button
                                     mx={"auto"}
-                                    colorScheme={"black"}
+                                    mb={3}
+                                    colorScheme={"teal"}
                                     leftIcon={<GoMarkGithub />}
                                     as={"a"}
                                     href={`https://github.com/login/oauth/authorize?scope=user&client_id=${client_id}&redirect_uri=${redirect_uri}`}
@@ -123,11 +124,6 @@ const Login = () => {
                             )}
                         </Box>
                     </ModalBody>
-                    <ModalFooter>
-                        <Button colorScheme="blue" mr={3} onClick={onClose}>
-                            Close
-                        </Button>
-                    </ModalFooter>
                 </ModalContent>
             </Modal>
         </>
