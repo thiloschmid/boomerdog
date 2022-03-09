@@ -233,7 +233,10 @@ export default class Board {
             if (this.isRegularIndex(n)) {
                 const nodeOccupation = this.nodes[n];
                 if (nodeOccupation < this.nPlayers) {
-                    p === nodeOccupation ? collateral-- : collateral++;
+                    p === nodeOccupation ||
+                    p === (nodeOccupation + 2) % this.nPlayers
+                        ? collateral--
+                        : collateral++;
                 }
             }
         }
@@ -351,6 +354,14 @@ export default class Board {
             );
             if (this.isReachable(p, moveNodes)) {
                 if (sevenPlayed) {
+                    // check if player may enter the endzone
+                    // const firstOccupiedEndzoneIndex =
+                    //     this.endzones[p].indexOf(true);
+                    // const possibleStepsIntoTheEndzone =
+                    //     firstOccupiedEndzoneIndex === -1
+                    //         ? 4
+                    //         : firstOccupiedEndzoneIndex;
+
                     // encode that marbles on the way are blasted by adding SEVEN_MOVE_OFFSET
                     moves.push({
                         nodes: moveNodes.map((n) => SEVEN_MOVE_OFFSET + n),
@@ -478,8 +489,11 @@ export default class Board {
         );
     }
 
-    playerCanMove(p: number, move: number) {
+    playerCanMove(p: number, move: number, excludedMarble?: number) {
         for (let m = 0; m < 4; m++) {
+            if (m === excludedMarble) {
+                continue;
+            }
             if (
                 this.getPossibleDestinations(
                     p,
@@ -509,8 +523,8 @@ export default class Board {
         return (
             (possibilities[5] > 0 && possibilities[0] > 1) || // [6, 1]
             (possibilities[4] > 0 && possibilities[1] > 1) || // [5, 2]
-            (possibilities[3] > 0 && possibilities[2] > 1) || // [4, 3]
             (possibilities[4] > 0 && possibilities[0] > 2) || // [5, 1, 1]
+            (possibilities[3] > 0 && possibilities[2] > 1) || // [4, 3]
             (possibilities[3] > 0 &&
                 possibilities[1] > 1 &&
                 possibilities[0] > 2) || // [4, 2, 1]
@@ -522,6 +536,13 @@ export default class Board {
                 possibilities[0] > 3) || // [3, 2, 1, 1]
             (possibilities[1] > 2 && possibilities[0] > 3)
         ); // [2, 2, 2, 1]
+    }
+
+    playerCanCompleteN(p: number, excludedMarble: number, distance: number) {
+        if (this.playerCanMove(p, distance, excludedMarble)) {
+            return true;
+        }
+        return false;
     }
 
     /**

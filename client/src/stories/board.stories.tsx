@@ -60,6 +60,7 @@ Default.args = {
         players: [],
     },
     gameState: {
+        isFinished: [false, false, false, false],
         gamePhase: 2,
         activePlayerIndex: 3,
         activePlayerUserId: "lel",
@@ -232,6 +233,7 @@ Swapping.args = {
         players: [],
     },
     gameState: {
+        isFinished: [false, false, false, false],
         gamePhase: 1,
         activePlayerIndex: 3,
         activePlayerUserId: "lel",
@@ -239,7 +241,7 @@ Swapping.args = {
         hasFolded: [false, false, false, false],
         numberOfDistributedCards: 6,
         stack: [],
-        playerStartingNext: 2
+        playerStartingNext: 2,
     },
     cards: [],
     marbleLocations: [

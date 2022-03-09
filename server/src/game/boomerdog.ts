@@ -39,6 +39,8 @@ export default class BoomerDog {
     // initially true, becomes false after folding or playing all cards
     isPlaying: boolean[];
     hasFolded: boolean[];
+    isFinished: boolean[];
+    playingWith: number[];
 
     // store the distance that was moved with a seven card
     remainderForSevenCard;
@@ -60,6 +62,8 @@ export default class BoomerDog {
 
         this.isPlaying = [true, true, true, true];
         this.hasFolded = [false, false, false, false];
+        this.isFinished = [false, false, false, false];
+        this.playingWith = [0, 1, 2, 3]; // changes once a player finishes
         this.swapCards = [-1, -1, -1, -1]; // store the card index
 
         this.remainderForSevenCard = 7;
@@ -86,12 +90,20 @@ export default class BoomerDog {
         this.possibleMoves = this.computePossibleMoves();
     }
 
+    playerIsFinished(p: number) {
+        return !this.board.endzones[p].includes(false);
+    }
+
     roundIsFinished() {
         return !this.isPlaying.includes(true);
     }
 
     gameIsFinished() {
-        return false; // the game never finishes lol 🏁
+        // 🏁
+        return (
+            (this.isFinished[0] && this.isFinished[2]) ||
+            (this.isFinished[1] && this.isFinished[3])
+        );
     }
 
     storeSwapCard(p: number, c: number) {
@@ -143,6 +155,18 @@ export default class BoomerDog {
         console.debug(
             `${blue(`Player ${this.activePlayerIndex}'s turn ended`)}`
         );
+        // check if the player is finished
+        if (this.playerIsFinished(this.playingWith[this.activePlayerIndex])) {
+            this.isFinished = [...Array(this.nPlayers).keys()].map((p) =>
+                this.playerIsFinished(p)
+            );
+            if (this.gameIsFinished()) {
+                return;
+            }
+            this.playingWith = this.isFinished.map((value, i) =>
+                value ? (i + 2) % this.nPlayers : i
+            );
+        }
         // check if the player still has cards left
         if (!this.deck.playerHasCards(this.activePlayerIndex)) {
             this.isPlaying[this.activePlayerIndex] = false;
@@ -183,15 +207,19 @@ export default class BoomerDog {
                 return [[], [], [], []];
             } else if (
                 card.value === 7 &&
-                !this.board.playerCanCompleteSeven(this.activePlayerIndex)
+                !this.board.playerCanCompleteSeven(
+                    this.playingWith[this.activePlayerIndex]
+                )
             ) {
                 return [[], [], [], []];
             }
 
-            return this.board.marbleLocations[this.activePlayerIndex].map((n) =>
+            return this.board.marbleLocations[
+                this.playingWith[this.activePlayerIndex]
+            ].map((n) =>
                 CARD_OPTIONS[card.value].flatMap((move) =>
                     this.board.getPossibleDestinations(
-                        this.activePlayerIndex,
+                        this.playingWith[this.activePlayerIndex],
                         n,
                         move
                     )
@@ -209,11 +237,11 @@ export default class BoomerDog {
             (co) => co - 70 <= this.remainderForSevenCard
         );
         this.remainingMoves = this.board.marbleLocations[
-            this.activePlayerIndex
+            this.playingWith[this.activePlayerIndex]
         ].map((n) =>
             remainingCardOptions.flatMap((move) =>
                 this.board.getPossibleDestinations(
-                    this.activePlayerIndex,
+                    this.playingWith[this.activePlayerIndex],
                     n,
                     move
                 )
@@ -247,7 +275,11 @@ export default class BoomerDog {
             )}`
         );
 
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi].nodes);
+        this.board.executeMove(
+            this.playingWith[this.activePlayerIndex],
+            m,
+            moves[mi].nodes
+        );
         this.deck.cardPlayed(this.activePlayerIndex, c);
 
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
@@ -279,7 +311,11 @@ export default class BoomerDog {
         const moves = this.remainingMoves[m];
         console.log(`${blue(`Player moves ${moves?.[mi]} from a seven card`)}`);
 
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi].nodes);
+        this.board.executeMove(
+            this.playingWith[this.activePlayerIndex],
+            m,
+            moves[mi].nodes
+        );
 
         if (moves[mi].nodes.length > this.remainderForSevenCard) {
             console.error("Invalid move, not enough moves left");

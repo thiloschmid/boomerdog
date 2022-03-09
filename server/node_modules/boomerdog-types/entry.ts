@@ -56,9 +56,11 @@ interface GameState {
     stack: CardBase[];
     hasSwapped: boolean[];
     hasFolded: boolean[];
+    isFinished: boolean[];
     remainingMoves?: number;
     playerStartingNext: number;
     numberOfCards?: number[];
+    playingWith?: number[];
 }
 
 export {

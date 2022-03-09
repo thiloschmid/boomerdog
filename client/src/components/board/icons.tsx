@@ -6,7 +6,7 @@ export const DiscardIcon = (props: {
     <svg
         stroke={props.color}
         fill={props.color}
-        stroke-width="0"
+        strokeWidth="0"
         viewBox="0 0 512 512"
         height={props.height}
         width={props.width}

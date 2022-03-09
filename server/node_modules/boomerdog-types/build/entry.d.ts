@@ -38,9 +38,11 @@ interface GameState {
     stack: CardBase[];
     hasSwapped: boolean[];
     hasFolded: boolean[];
+    isFinished: boolean[];
     remainingMoves?: number;
     playerStartingNext: number;
     numberOfCards?: number[];
+    playingWith?: number[];
 }
 export { User, CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
 //# sourceMappingURL=entry.d.ts.map

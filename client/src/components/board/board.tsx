@@ -184,7 +184,10 @@ const Board = ({
         <chakra.circle
             cursor="pointer"
             onMouseOver={() => {
-                if (data.p === playerIndex) {
+                if (
+                    gameState?.playingWith &&
+                    data.p === gameState.playingWith[playerIndex]
+                ) {
                     setShowMove(data.m);
                     if (selectedMarble !== null && selectedMarble !== data.m) {
                         setSelectedMarble(null);
@@ -193,7 +196,8 @@ const Board = ({
             }}
             onMouseOut={() => setShowMove(null)}
             onClick={
-                data.p === playerIndex
+                gameState?.playingWith &&
+                data.p === gameState.playingWith[playerIndex]
                     ? () => {
                           marbleClicked(data.m);
                       }
@@ -447,8 +451,8 @@ const Board = ({
                               )
                             : possibleMoves?.length &&
                               selectedCardIndex !== null &&
-                              possibleMoves[selectedCardIndex] !== null &&
-                              possibleMoves[selectedCardIndex]!.map(
+                              possibleMoves[selectedCardIndex] &&
+                              possibleMoves[selectedCardIndex].map(
                                   (moves, m) =>
                                       (showMove === m ||
                                           selectedMarble === m) &&

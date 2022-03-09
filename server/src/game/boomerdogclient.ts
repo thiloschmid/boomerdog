@@ -116,7 +116,9 @@ export default class BoomerDogHandler extends BoomerDog {
             stack: this.deck.stack,
             hasSwapped: this.swapCards.map((c) => c !== -1),
             hasFolded: this.hasFolded,
+            isFinished: this.isFinished,
             playerStartingNext: this.playerStartingNext,
+            playingWith: this.playingWith,
         };
 
         if (this.gamePhase === GamePhase.WaitingForSevenMove) {
@@ -258,7 +260,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (super.swapIsComplete()) {
             super.swap();
             this.emitCards();
-            this.playerStartingNext = this.roundNumber + (1 % this.nPlayers);
+            this.playerStartingNext = (this.roundNumber + 1) % this.nPlayers;
             this.startTurn();
         }
         this.emitGameState();
