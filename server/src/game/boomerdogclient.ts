@@ -470,6 +470,13 @@ export default class BoomerDogHandler extends BoomerDog {
     }
 
     computeMoveWeight(move: number[]) {
+        // destination of the move
+        const nNew = move[move.length - 1];
+        if (nNew >= 100) {
+            // value entering the endzone higher with the first node yielding
+            // the weight 2, and the final node yielding 5
+            return (nNew % 10) + 2;
+        }
         return 1;
     }
 }

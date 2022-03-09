@@ -24,10 +24,12 @@ import {
 } from "boomerdog-types";
 import Popup from "./popup";
 
+// ⚠️ This has to be consistent with the backend!
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
 // the node index
 const SEVEN_MOVE_OFFSET = 1000;
-const SWAP_MOVE_OFFSET = 300; // same for swaps
+// same for swaps
+const SWAP_MOVE_OFFSET = 300;
 
 const RADIUS = { inner: 12, outer: 20 };
 export const BOARD_SIZE = { height: 800, width: 800 };
@@ -63,9 +65,9 @@ const pulseAnimation = `${pulse} infinite 1.5s linear`;
 export interface BoardProps {
     gameData: GameData;
     gameState: GameState | null;
-    marbleLocations: number[][]; // [cards][marbles][moves]
+    marbleLocations: number[][]; 
     stack: CardBase[];
-    possibleMoves: CardMoves[];
+    possibleMoves: CardMoves[]; // array [cards][marbles][moves]
     selectedCardIndex: number | null;
     cards: (CardBase | null)[];
     isActive: boolean;
@@ -295,10 +297,15 @@ const Board = ({
         />
     );
 
+    interface PossibleTargetMarkerProps {
+        isVisible: boolean;
+        data: { x: number; y: number; id: number; r?: number; index: number };
+    }
+
     const PossibleMoveTargetMarker = ({
         isVisible,
         data,
-    }: PossibleMoveMarkerProps) => (
+    }: PossibleTargetMarkerProps) => (
         <g
             transform={`translate(${data.x},${data.y})`}
             visibility={isVisible ? "data." : "hidden"}
@@ -320,7 +327,7 @@ const Board = ({
                 // strokeWidth={".3em"}
                 fill={SELECTION_COLOR}
                 opacity={0}
-                onClick={() => data.index && targetClicked(data.index)}
+                onClick={() => targetClicked(data.index)}
                 // cx={data.x}
                 // cy={data.y}
                 cursor="pointer"
