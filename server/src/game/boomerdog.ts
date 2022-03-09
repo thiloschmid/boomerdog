@@ -243,13 +243,13 @@ export default class BoomerDog {
             )}`
         );
 
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi].nodes);
         this.deck.cardPlayed(this.activePlayerIndex, c);
 
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
-        if (moves[mi][0] >= SEVEN_MOVE_OFFSET) {
+        if (moves[mi].nodes[0] >= SEVEN_MOVE_OFFSET) {
             console.log(`seven-move`)
-            this.remainderForSevenCard -= moves[mi].length;
+            this.remainderForSevenCard -= moves[mi].nodes.length;
 
             if (this.remainderForSevenCard) {
                 this.gamePhase = GamePhase.WaitingForSevenMove;
@@ -277,16 +277,16 @@ export default class BoomerDog {
             `${blue(`Player moves ${moves?.[mi]} from a seven card`)}`
         );
 
-        this.board.executeMove(this.activePlayerIndex, m, moves[mi]);
+        this.board.executeMove(this.activePlayerIndex, m, moves[mi].nodes);
 
-        if (moves[mi].length > this.remainderForSevenCard) {
+        if (moves[mi].nodes.length > this.remainderForSevenCard) {
             console.error("Invalid move, not enough moves left");
             return {
                 status: 1,
                 message: "Invalid move, not enough moves left",
             };
         }
-        this.remainderForSevenCard -= moves[mi].length;
+        this.remainderForSevenCard -= moves[mi].nodes.length;
 
         if (this.remainderForSevenCard) {
             this.gamePhase = GamePhase.WaitingForSevenMove;

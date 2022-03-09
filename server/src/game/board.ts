@@ -96,7 +96,7 @@ export default class Board {
      * @param moveBackwards - Indicates moving direction (i.e. for a 4️⃣)
      * @returns The range of board indices between `origin` and `destination`
      */
-    getIntermediateNodeIndices(
+    computeMoveNodes(
         origin: number,
         destination: number,
         moveBackwards: boolean = false
@@ -119,10 +119,7 @@ export default class Board {
                 (i) => 100 + 10 * p + i
             );
 
-            return [
-                ...this.getIntermediateNodeIndices(origin, 16 * p),
-                ...endzoneNodes,
-            ];
+            return [...this.computeMoveNodes(origin, 16 * p), ...endzoneNodes];
         }
         if (!moveBackwards) {
             const length =
@@ -187,7 +184,6 @@ export default class Board {
      * @param move - The requested move
      * @returns The index of the destination node in the endzone, or null.
      */
-
     getEndzoneDestination(p: number, n: number, move: number) {
         // check if the node is blocking and can therefore not enter the endzone
         if (this.nodes[n] === 10 + p) {
@@ -227,6 +223,23 @@ export default class Board {
         return true;
     }
 
+    computeCollateral(p: number, nodeIndices: number[], sevenPlayed: boolean) {
+        let collateral = 0;
+
+        if (!sevenPlayed) {
+            nodeIndices = [nodeIndices[nodeIndices.length - 1]];
+        }
+        for (let n of nodeIndices) {
+            if (this.isRegularIndex(n)) {
+                const nodeOccupation = this.nodes[n];
+                if (nodeOccupation < this.nPlayers) {
+                    p === nodeOccupation ? collateral-- : collateral++;
+                }
+            }
+        }
+        return collateral;
+    }
+
     /**
      *
      * @param p - The player index
@@ -235,14 +248,18 @@ export default class Board {
      * @returns - An array of the nodes which are reachable by the given move,
      * or `null` if it is not possible to reach.
      */
-    getPossibleDestinations(p: number, n: number, move: number): number[][] {
+    getPossibleDestinations(
+        p: number,
+        n: number,
+        move: number
+    ): { nodes: number[]; collateral?: number }[] {
         let sevenPlayed = false;
         let distance;
         switch (move) {
             // handle going out
             case 0:
                 if (n === -1 && this.canGoOut(p)) {
-                    return [[-1, p * 16]];
+                    return [{ nodes: [-1, p * 16] }];
                 } else {
                     return [];
                 }
@@ -267,9 +284,9 @@ export default class Board {
             // handle switcheroos
             case 14:
                 if (this.isRegularIndex(n) && this.nodes[n] < this.nPlayers) {
-                    return this.getSwitchCandidates(p).map((n) => [
-                        n + SWAP_MOVE_OFFSET,
-                    ]);
+                    return this.getSwitchCandidates(p).map((n) => ({
+                        nodes: [n + SWAP_MOVE_OFFSET],
+                    }));
                 } else {
                     return [];
                 }
@@ -302,17 +319,23 @@ export default class Board {
         let destination = this.getDestination(n, distance);
 
         if (destination !== null) {
-            const move = this.getIntermediateNodeIndices(
+            const moveNodes = this.computeMoveNodes(
                 n,
                 destination,
                 distance < 0
             );
-            if (this.isReachable(p, move)) {
+            if (this.isReachable(p, moveNodes)) {
                 if (sevenPlayed) {
                     // encode that marbles on the way are blasted by adding an offset
-                    moves.push(move.map((n) => SEVEN_MOVE_OFFSET + n));
+                    moves.push({
+                        nodes: moveNodes.map((n) => SEVEN_MOVE_OFFSET + n),
+                        collateral: this.computeCollateral(p, moveNodes, true),
+                    });
                 } else {
-                    moves.push(move);
+                    moves.push({
+                        nodes: moveNodes,
+                        collateral: this.computeCollateral(p, moveNodes, false),
+                    });
                 }
             }
         }
@@ -321,17 +344,20 @@ export default class Board {
         let endzoneDestination = this.getEndzoneDestination(p, n, distance);
 
         if (endzoneDestination !== null && distance > 0) {
-            const move = this.getIntermediateNodeIndices(
+            const moveNodes = this.computeMoveNodes(
                 n,
                 endzoneDestination,
                 false
             );
-            if (this.isReachable(p, move)) {
+            if (this.isReachable(p, moveNodes)) {
                 if (sevenPlayed) {
                     // encode that marbles on the way are blasted by adding SEVEN_MOVE_OFFSET
-                    moves.push(move.map((n) => SEVEN_MOVE_OFFSET + n));
+                    moves.push({
+                        nodes: moveNodes.map((n) => SEVEN_MOVE_OFFSET + n),
+                        collateral: this.computeCollateral(p, moveNodes, true),
+                    });
                 } else {
-                    moves.push(move);
+                    moves.push({ nodes: moveNodes });
                 }
             }
         }
@@ -593,25 +619,4 @@ export default class Board {
         }
         this.marbleLocations[p][m] = n;
     }
-
-    // toObject() {
-    //     return {
-    //         nPlayers: this.nPlayers,
-    //         nodes: this.nodes,
-    //         playerInfo: this.playerInfo,
-    //     };
-    // }
-
-    // static fromObject(board: {
-    //     nPlayers: number;
-    //     nodes: number[];
-    //     playerInfo: { endzone: boolean[]; base: number }[];
-    // }) {
-    //     // create a new board based on the settings passed as an object
-    //     let newBoard = new Board(board.nPlayers);
-    //     newBoard.nodes = board.nodes;
-    //     newBoard.playerInfo = board.playerInfo;
-
-    //     return newBoard;
-    // }
 }
