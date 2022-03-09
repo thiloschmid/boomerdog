@@ -165,6 +165,7 @@ app.get("/token", async function (req, res) {
         } catch (e) {
             console.error(e);
             res.send({ status: 1, message: "Error fetching token" });
+            return;
         }
     }
     if (token) {
