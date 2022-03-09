@@ -22,7 +22,7 @@ interface User {
     gameId?: string;
 }
 
-type Move = { nodes: number[]; collateral: number };
+type Move = { nodes: number[]; collateral?: number };
 type MarbleMoves = Move[];
 type CardMoves = MarbleMoves[];
 
