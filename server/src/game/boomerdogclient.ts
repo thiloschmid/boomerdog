@@ -154,10 +154,9 @@ export default class BoomerDogHandler extends BoomerDog {
     }
 
     playerQuit(user: User) {
-        console.log(blue(`${user.name} quit`));
-        if (this.hasStarted) {
-            return { status: 1, message: "Game has already started" };
-        }
+        // if (this.hasStarted) {
+        //     return { status: 1, message: "Game has already started" };
+        // }
         const index = this.players.indexOf(user);
         if (index === -1) {
             return { status: 1, message: "Player is not in the game" };
@@ -165,6 +164,7 @@ export default class BoomerDogHandler extends BoomerDog {
         this.players.splice(index);
         delete user.gameId;
 
+        console.log(blue(`${user.name} quit`));
         return { status: 0 };
     }
 

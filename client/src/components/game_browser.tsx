@@ -16,7 +16,7 @@ import CreateGameDrawer from "./create_game_drawer";
 import { BoomerDogSocket } from "../api/socket-client";
 
 interface GameBrowserProps {
-    socket?: BoomerDogSocket;
+    socket: BoomerDogSocket;
     player: User;
 }
 const GameBrowser = ({ socket, player }: GameBrowserProps) => {
@@ -33,14 +33,20 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
     }, [socket]);
 
     const joinGame = (gameId: string) => {
-        player &&
-            socket &&
-            socket.emit("game:join", { gameId: gameId }, (response) => {
-                if (!response.status) {
-                } else {
-                    console.error(response.message);
-                }
-            });
+        socket.emit("game:join", { gameId: gameId }, (response) => {
+            if (!response.status) {
+            } else {
+                console.error(response.message);
+            }
+        });
+    };
+
+    const quitGame = (gameId: string) => {
+        socket.emit("game:quit", { gameId: gameId }, (response) => {
+            if (response.status) {
+                console.error(response.message);
+            }
+        });
     };
 
     return (
@@ -57,11 +63,9 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                 </Thead>
                 <Tbody>
                     {games.map((g) => {
-                        const isPlayersGame =
-                            player &&
-                            g.players
-                                .map((p) => p.userId)
-                                .includes(player.userId);
+                        const isPlayersGame = g.players
+                            .map((p) => p.userId)
+                            .includes(player.userId);
                         return (
                             <Tr
                                 bg={isPlayersGame ? selectionColor : ""}
@@ -73,7 +77,15 @@ const GameBrowser = ({ socket, player }: GameBrowserProps) => {
                                     {g.players.map((p) => p.name).join(", ")}
                                 </Td>
                                 <Td>
-                                    {!isPlayersGame && (
+                                    {isPlayersGame ? (
+                                        <Button
+                                            onClick={() => {
+                                                quitGame(g.gameId);
+                                            }}
+                                        >
+                                            Quit
+                                        </Button>
+                                    ) : (
                                         <Button
                                             onClick={() => {
                                                 joinGame(g.gameId);

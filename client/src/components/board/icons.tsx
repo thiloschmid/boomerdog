@@ -24,7 +24,7 @@ export const ExchangeIcon = (props: {
     <svg
         stroke={props.color}
         fill={props.color}
-        stroke-width="0"
+        strokeWidth="0"
         viewBox="0 0 512 512"
         height={props.height}
         width={props.width}
@@ -38,7 +38,7 @@ export const StackIcon = (props: { color: string; size: number }) => (
     <svg
         stroke={props.color}
         fill={props.color}
-        stroke-width="0"
+        strokeWidth="0"
         role="img"
         viewBox="0 0 24 24"
         height={props.size}

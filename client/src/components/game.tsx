@@ -29,9 +29,23 @@ interface GameProps {
     authToken: string;
     isConnected: boolean;
     setIsConnected: React.Dispatch<React.SetStateAction<boolean>>;
+    collapseDisclosure: {
+        isOpen: boolean;
+        onOpen: () => void;
+        onClose: () => void;
+        onToggle: () => void;
+        isControlled: boolean;
+        getButtonProps: (props?: any) => any;
+        getDisclosureProps: (props?: any) => any;
+    };
 }
 
-const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
+const Game = ({
+    authToken,
+    isConnected,
+    setIsConnected,
+    collapseDisclosure,
+}: GameProps) => {
     const [socket, setSocket] = React.useState<BoomerDogSocket | null>(null);
     const [player, setPlayer] = React.useState<User | null>(null);
     const [gameData, setGameData] = React.useState<GameData | null>(null);
@@ -129,7 +143,7 @@ const Game = ({ authToken, isConnected, setIsConnected }: GameProps) => {
         <Box>
             {socket && player && (
                 <>
-                    {(player.gameId && gameData && gameData.hasStarted) || (
+                    {collapseDisclosure.isOpen && (
                         <GameBrowser {...{ socket, player }} />
                     )}
                     {player.gameId && gameData && (

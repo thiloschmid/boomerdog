@@ -55,12 +55,25 @@ export interface NavBarProps {
     isLoggedIn: boolean; // logged in via github
     isConnected: boolean; // connected to the socketio backend
     loginElement: JSX.Element;
+    collapseDisclosure: {
+        isOpen: boolean;
+        onOpen: () => void;
+        onClose: () => void;
+        onToggle: () => void;
+        isControlled: boolean;
+        getButtonProps: (props?: any) => any;
+        getDisclosureProps: (props?: any) => any;
+    };
 }
 
-const NavBar = ({ isLoggedIn, isConnected, loginElement }: NavBarProps) => {
+const NavBar = ({
+    isLoggedIn,
+    isConnected,
+    loginElement,
+    collapseDisclosure,
+}: NavBarProps) => {
     const { state, dispatch } = React.useContext(AuthContext);
     const { isOpen, onOpen, onClose } = useDisclosure();
-    const collapseDisclosure = useDisclosure({ defaultIsOpen: true });
 
     const logout = () => {
         console.log("logout");

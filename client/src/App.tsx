@@ -1,6 +1,6 @@
 import * as React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ChakraProvider, theme } from "@chakra-ui/react";
+import { ChakraProvider, theme, useDisclosure } from "@chakra-ui/react";
 
 import Layout from "./components/layout";
 import Game from "./components/game";
@@ -21,6 +21,8 @@ export const App = () => {
     const [state, dispatch] = React.useReducer(reducer, initialState);
     const [isConnected, setIsConnected] = React.useState(false);
 
+    const collapseDisclosure = useDisclosure({ defaultIsOpen: true });
+
     return (
         <AuthContext.Provider value={{ state, dispatch }}>
             <ChakraProvider theme={theme}>
@@ -33,6 +35,7 @@ export const App = () => {
                                     isLoggedIn={state.isLoggedIn}
                                     isConnected={isConnected}
                                     loginElement={<Login />}
+                                    collapseDisclosure={collapseDisclosure}
                                 >
                                     {state.isLoggedIn && state.authToken && (
                                         // Here, sockets exist 🔥
@@ -41,6 +44,7 @@ export const App = () => {
                                                 authToken: `${state.authToken}`,
                                                 isConnected,
                                                 setIsConnected,
+                                                collapseDisclosure,
                                             }}
                                         />
                                     )}
