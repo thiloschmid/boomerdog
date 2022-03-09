@@ -1,5 +1,11 @@
-import { User } from "./user";
-import { CardBase, CardMoves, GameData, GameState, MarbleMoves } from "./entry";
+import {
+    User,
+    CardBase,
+    CardMoves,
+    GameData,
+    GameState,
+    MarbleMoves,
+} from "./entry";
 
 /**
  * 0 : ok

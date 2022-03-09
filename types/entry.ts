@@ -81,5 +81,4 @@ export {
     ServerToClientEvents,
     SocketData,
     UserIdentifierPayload,
-    UserId,
 };
