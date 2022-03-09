@@ -7,7 +7,7 @@ interface User {
 }
 declare type Move = {
     nodes: number[];
-    collateral: number;
+    collateral?: number;
 };
 declare type MarbleMoves = Move[];
 declare type CardMoves = MarbleMoves[];

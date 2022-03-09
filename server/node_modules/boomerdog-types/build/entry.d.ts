@@ -1,6 +1,14 @@
-import { User, UserId } from "./user";
 import { IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload } from "./socketio";
-declare type Move = number[];
+interface User {
+    name: string;
+    userId: string;
+    avatarUrl: string;
+    gameId?: string;
+}
+declare type Move = {
+    nodes: number[];
+    collateral: number;
+};
 declare type MarbleMoves = Move[];
 declare type CardMoves = MarbleMoves[];
 interface CardBase {
@@ -29,7 +37,8 @@ interface GameState {
     activePlayerIndex: number;
     stack: CardBase[];
     hasSwapped: boolean[];
+    hasFolded: boolean[];
     remainingMoves?: number;
 }
-export { CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, User, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, UserId, };
+export { User, CardMoves, MarbleMoves, CardBase, GameData, GamePhase, GameState, IoResponse, AuthenticateUserIoResponse, CardClickedResponse, ClientToServerEvents, CreateGameIoResponse, CreateGamePayload, GameIdentifierPayload, InterServerEvents, IoCallback, PerformMovePayload, ReadUserIoResponse, ServerToClientEvents, SocketData, UserIdentifierPayload, };
 //# sourceMappingURL=entry.d.ts.map
