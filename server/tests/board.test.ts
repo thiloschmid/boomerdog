@@ -86,37 +86,37 @@ test("Check possible destinations", () => {
     // note the order, the endzone destination comes last
 
     expect(
-        board.getPossibleDestinations(0, 62, 4).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 0, 4).map((res) => res.nodes)
     ).toStrictEqual([
         [63, 0, 1, 2],
         [63, 0, 100, 101],
     ]);
     expect(
-        board.getPossibleDestinations(0, 62, 5).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 0, 5).map((res) => res.nodes)
     ).toStrictEqual([
         [63, 0, 1, 2, 3],
         [63, 0, 100, 101, 102],
     ]);
     expect(
-        board.getPossibleDestinations(0, 62, 8).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 0, 8).map((res) => res.nodes)
     ).toStrictEqual([[63, 0, 1, 2, 3, 4, 5, 6]]);
 
     board.setMarble(1, 0, 62); // 62 🔵 => should clear 62 🔴
     expect(board.marbleLocations[0][0]).toBe(-1);
     expect(
-        board.getPossibleDestinations(1, 62, 4).map((res) => res.nodes)
+        board.getPossibleDestinations(1, 0, 4).map((res) => res.nodes)
     ).toStrictEqual([[63, 0, 1, 2]]);
 
     board.setMarble(1, 1, 110);
     expect(
-        board.getPossibleDestinations(1, 110, 3).map((res) => res.nodes)
+        board.getPossibleDestinations(1, 1, 3).map((res) => res.nodes)
     ).toStrictEqual([[111, 112, 113]]);
 
     board.setMarble(2, 0, 32);
     expect(board.nodes[32]).toBe(2);
     expect(board.getEndzoneDestination(2, 32, 3)).toBe(122);
     expect(
-        board.getPossibleDestinations(2, 32, 3).map((res) => res.nodes)
+        board.getPossibleDestinations(2, 0, 3).map((res) => res.nodes)
     ).toStrictEqual([
         [33, 34, 35],
         [120, 121, 122],
@@ -125,7 +125,7 @@ test("Check possible destinations", () => {
     board.setMarble(0, 2, 60);
     expect(board.nodes[60]).toBe(0);
     expect(
-        board.getPossibleDestinations(0, 60, 5).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 2, 5).map((res) => res.nodes)
     ).toStrictEqual([
         [61, 62, 63, 0, 1],
         [61, 62, 63, 0, 100],
@@ -140,24 +140,24 @@ test("Check if a player can complete the seven card", () => {
 
     board.setMarble(0, 0, 13);
     expect(
-        board.getPossibleDestinations(0, 13, 10).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 0, 10).map((res) => res.nodes)
     ).toStrictEqual([[14, 15, 16, 17, 18, 19, 20, 21, 22, 23]]);
     expect(board.playerCanMove(0, 10)).toBe(true);
-    expect(board.playerCanCompleteSeven(0)).toBe(true);
+    // expect(board.playerCanCompleteSeven(0)).toBe(true);
     expect(board.playerCanCompleteN(7, 0)).toBe(true);
 
     board.executeMove(1, 0, [-1, 16]);
     expect(board.nodes[16]).toBe(11);
     expect(board.nodes[13]).toBe(0);
     expect(
-        board.getPossibleDestinations(0, 13, 7).map((res) => res.nodes)
+        board.getPossibleDestinations(0, 0, 7).map((res) => res.nodes)
     ).toStrictEqual([]);
     expect(board.computeMoveNodes(13, 20)).toStrictEqual([
         14, 15, 16, 17, 18, 19, 20,
     ]);
     expect(board.isReachable(0, [14, 15, 16, 17, 18, 19, 20])).toBe(false);
     expect(board.playerCanMove(0, 7)).toBe(false);
-    expect(board.playerCanCompleteSeven(0)).toBe(false);
+    // expect(board.playerCanCompleteSeven(0)).toBe(false);
     expect(board.playerCanCompleteN(7, 0)).toBe(false);
 });
 
@@ -166,9 +166,26 @@ test("Check entering endzone", () => {
 
     // moving three forward should not be possible
     board.setMarble(0, 1, 62);
-    console.log(board.getPossibleDestinations(0, 62, 5));
+    // console.log(board.getPossibleDestinations(0, 1, 5));
     board.setMarble(0, 0, 102);
-    console.log(board.getPossibleDestinations(0, 62, 5));
+    // console.log(board.getPossibleDestinations(0, 1, 5));
     board.setMarble(0, 1, 103);
-    console.log(board.isReachable(0, [63, 0, 100, 101, 102, 103]));
+    // console.log(board.isReachable(0, [63, 0, 100, 101, 102, 103]));
+});
+
+test("check player can finish", () => {
+    const board = new Board(4);
+
+    board.setMarble(0, 1, 101);
+    board.setMarble(0, 2, 102);
+    board.setMarble(0, 3, 103);
+    board.setMarble(0, 0, 60); // five steps from finishing
+
+    expect(board.stepsToFinish(0)).toBe(5);
+
+    console.log(board.getPossibleDestinations(0, 0, 75, 2))
+    
+    board.setMarble(2, 0, 13) // place random marble of teammate
+    console.log(board.getPossibleDestinations(0, 0, 75, 2))
+
 });

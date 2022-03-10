@@ -16,7 +16,7 @@ Throughout the class, p is used for the player number and n stands for the node
 index. 
 */
 
-import { computePartitions } from "../utils";
+import { computePartitions } from "../utils.js";
 
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
 // the node index
@@ -268,7 +268,12 @@ export default class Board {
             // handle going out
             case 0:
                 if (n === -1 && this.canGoOut(p)) {
-                    return [{ nodes: [-1, p * 16] }];
+                    return [
+                        {
+                            nodes: [-1, p * 16],
+                            collateral: +(this.nodes[p * 16] < this.nPlayers),
+                        },
+                    ];
                 } else {
                     return [];
                 }
@@ -321,7 +326,7 @@ export default class Board {
             return [];
         }
 
-        let moves = [];
+        let moves: { nodes: number[]; collateral?: number }[] = [];
 
         // node that would be reached if not entering the endzone
         // if the node is already in the endzone, null is returned
@@ -335,13 +340,23 @@ export default class Board {
             );
             if (this.isReachable(p, moveNodes)) {
                 if (sevenPlayed) {
-                    // encode that marbles on the way are blasted by adding an offset
-                    moves.push({
-                        nodes: moveNodes.map(
-                            (node) => SEVEN_MOVE_OFFSET + node
-                        ),
-                        collateral: this.computeCollateral(p, moveNodes, true),
-                    });
+                    if (typeof remainder === "undefined") {
+                        console.warn("No remainder specified for seven move!");
+                        return moves;
+                    }
+                    if (this.playerCanCompleteN(remainder, p, m)) {
+                        // encode that marbles on the way are blasted by adding an offset
+                        moves.push({
+                            nodes: moveNodes.map(
+                                (node) => SEVEN_MOVE_OFFSET + node
+                            ),
+                            collateral: this.computeCollateral(
+                                p,
+                                moveNodes,
+                                true
+                            ),
+                        });
+                    }
                 } else {
                     moves.push({
                         nodes: moveNodes,
@@ -366,15 +381,18 @@ export default class Board {
                         console.warn("No remainder specified for seven move!");
                         return moves;
                     }
-                    if (!this.playerCanCompleteN(remainder, p, m)) {
+                    if (
+                        remainder &&
+                        !this.playerCanCompleteN(remainder, p, m)
+                    ) {
                         console.debug(
-                            "Player can't complete the seven moves when entering the endzone"
+                            `Player can't complete ${remainder} moves when entering the endzone`
                         );
 
                         const stepsToFinish = this.stepsToFinish(p);
                         if (
                             stepsToFinish === null ||
-                            stepsToFinish > remainder
+                            stepsToFinish > distance + remainder
                         ) {
                             console.debug("Player can't finish either");
                             return moves;
@@ -382,7 +400,7 @@ export default class Board {
                             // the player can finish
                             if (
                                 !this.playerCanCompleteN(
-                                    remainder - stepsToFinish,
+                                    distance + remainder - stepsToFinish,
                                     (p + this.nPlayers / 2) % this.nPlayers
                                 )
                             ) {
@@ -394,18 +412,14 @@ export default class Board {
                                 return moves;
                             }
                         }
-
-                        moves.push({
-                            nodes: moveNodes.map(
-                                (node) => SEVEN_MOVE_OFFSET + node
-                            ),
-                            collateral: this.computeCollateral(
-                                p,
-                                moveNodes,
-                                true
-                            ),
-                        });
                     }
+
+                    moves.push({
+                        nodes: moveNodes.map(
+                            (node) => SEVEN_MOVE_OFFSET + node
+                        ),
+                        collateral: this.computeCollateral(p, moveNodes, true),
+                    });
                 } else {
                     // for everything other than a seven it is trivial
                     moves.push({ nodes: moveNodes });
@@ -534,62 +548,62 @@ export default class Board {
             if (m === excludedMarble) {
                 continue;
             }
-            if (
-                this.getPossibleDestinations(
-                    p,
-                    this.marbleLocations[p][m],
-                    move
-                ).length
-            ) {
+            if (this.getPossibleDestinations(p, m, move).length) {
                 return true;
             }
         }
         return false;
     }
 
-    playerCanCompleteSeven(p: number) {
-        // ⚠️ legacy
-        // 💁 it is not necessary to check if the player can finish and then
-        // continue with his teammate's marbles as he can always walk past
-        // the endzone
+    // playerCanCompleteSeven(p: number) {
+    //     // ⚠️ legacy
+    //     // 💁 it is not necessary to check if the player can finish and then
+    //     // continue with his teammate's marbles as he can always walk past
+    //     // the endzone
 
-        if (this.playerCanMove(p, 77)) {
-            return true;
-        }
-        let possibilities = Array(6).fill(0);
-        for (let j = 5; j >= 0; j--) {
-            for (let n of this.marbleLocations[p]) {
-                if (this.getPossibleDestinations(p, n, j + 1).length) {
-                    possibilities[j]++;
-                }
-            }
-        }
+    //     if (this.playerCanMove(p, 77)) {
+    //         return true;
+    //     }
+    //     let possibilities = Array(6).fill(0);
+    //     for (let j = 5; j >= 0; j--) {
+    //         for (let m = 0; m < 4; m++) {
+    //             if (this.getPossibleDestinations(p, m, j + 1).length) {
+    //                 possibilities[j]++;
+    //             }
+    //         }
+    //     }
 
-        return (
-            (possibilities[5] > 0 && possibilities[0] > 1) || // [6, 1]
-            (possibilities[4] > 0 && possibilities[1] > 1) || // [5, 2]
-            (possibilities[4] > 0 && possibilities[0] > 2) || // [5, 1, 1]
-            (possibilities[3] > 0 && possibilities[2] > 1) || // [4, 3]
-            (possibilities[3] > 0 &&
-                possibilities[1] > 1 &&
-                possibilities[0] > 2) || // [4, 2, 1]
-            (possibilities[3] > 0 && possibilities[0] > 3) || // [4, 1, 1, 1]
-            (possibilities[2] > 1 && possibilities[0] > 2) || // [3, 3, 1]
-            (possibilities[2] > 0 && possibilities[1] > 2) || // [3, 2, 2]
-            (possibilities[2] > 0 &&
-                possibilities[1] > 1 &&
-                possibilities[0] > 3) || // [3, 2, 1, 1]
-            (possibilities[1] > 2 && possibilities[0] > 3)
-        ); // [2, 2, 2, 1]
-    }
+    //     return (
+    //         (possibilities[5] > 0 && possibilities[0] > 1) || // [6, 1]
+    //         (possibilities[4] > 0 && possibilities[1] > 1) || // [5, 2]
+    //         (possibilities[4] > 0 && possibilities[0] > 2) || // [5, 1, 1]
+    //         (possibilities[3] > 0 && possibilities[2] > 1) || // [4, 3]
+    //         (possibilities[3] > 0 &&
+    //             possibilities[1] > 1 &&
+    //             possibilities[0] > 2) || // [4, 2, 1]
+    //         (possibilities[3] > 0 && possibilities[0] > 3) || // [4, 1, 1, 1]
+    //         (possibilities[2] > 1 && possibilities[0] > 2) || // [3, 3, 1]
+    //         (possibilities[2] > 0 && possibilities[1] > 2) || // [3, 2, 2]
+    //         (possibilities[2] > 0 &&
+    //             possibilities[1] > 1 &&
+    //             possibilities[0] > 3) || // [3, 2, 1, 1]
+    //         (possibilities[1] > 2 && possibilities[0] > 3)
+    //     ); // [2, 2, 2, 1]
+    // }
 
     playerCanCompleteN(distance: number, p: number, excludedMarble?: number) {
         // for distance = 3, this would be [[3], [2, 1], [1,1,1]]
         // note that its in descending order
+        if (distance === 0) {
+            return true;
+        }
+
         const partitions = computePartitions(distance);
 
         for (const partition of partitions) {
             // for each partiton compute possibilities to complete
+
+            // console.log(partition)
 
             const highestValue = partition[0];
             const sum = Array(highestValue).fill(0);
@@ -611,11 +625,8 @@ export default class Board {
                         continue;
                     }
                     // raise possibilities if there is a possible destination
-                    this.getPossibleDestinations(
-                        p,
-                        this.marbleLocations[p][m],
-                        i + 1
-                    ).length && possibilities++;
+                    this.getPossibleDestinations(p, m, i + 1).length &&
+                        possibilities++;
                 }
                 if (possibilities < sum[i]) {
                     // it does not work
@@ -648,7 +659,7 @@ export default class Board {
         // the number of marbles to the left of each unoccupied endzone node
         for (let i = 0; i < 4; i++) {
             // iterate through endzone in reverse direction
-            const endzoneNode = this.endzones[p][3 - 1];
+            const endzoneNode = this.endzones[p][3 - i];
             if (endzoneNode) {
                 marblesFound++;
             } else {
@@ -667,6 +678,7 @@ export default class Board {
                 marblesOut++;
             }
         }
+
         return steps;
     }
 

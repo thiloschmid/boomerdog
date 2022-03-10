@@ -231,22 +231,13 @@ export default class BoomerDog {
         return this.deck.hands[this.activePlayerIndex].map((card) => {
             if (card === null) {
                 return [[], [], [], []];
-            } else if (
-                card.value === 7 &&
-                !this.board.playerCanCompleteSeven(
-                    this.playingWith[this.activePlayerIndex]
-                )
-            ) {
-                return [[], [], [], []];
             }
 
-            return this.board.marbleLocations[
-                this.playingWith[this.activePlayerIndex]
-            ].map((n) =>
+            return Array.from({ length: 4 }, (e, m) =>
                 CARD_OPTIONS[card.value].flatMap((move) =>
                     this.board.getPossibleDestinations(
                         this.playingWith[this.activePlayerIndex],
-                        n,
+                        m,
                         move,
                         // if the move is with a seven card, also provide the
                         // corresponding remainder in case the move is chosen
@@ -269,14 +260,13 @@ export default class BoomerDog {
         const remainingCardOptions = CARD_OPTIONS[7].filter(
             (co) => co - 70 <= this.remainderForSevenCard
         );
-        this.remainingMoves = this.board.marbleLocations[
-            this.playingWith[this.activePlayerIndex]
-        ].map((n) =>
+        this.remainingMoves = Array.from({ length: 4 }, (v, m) =>
             remainingCardOptions.flatMap((move) =>
                 this.board.getPossibleDestinations(
                     this.playingWith[this.activePlayerIndex],
-                    n,
-                    move
+                    m,
+                    move,
+                    this.remainderForSevenCard - move + 70
                 )
             )
         );
