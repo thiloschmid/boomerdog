@@ -1,5 +1,5 @@
 import { blue } from "../api/utils/colors.js";
-import Board, { SEVEN_MOVE_OFFSET } from "./board.js";
+import Board, { SEVEN_MOVE_OFFSET, SWAP_MOVE_OFFSET } from "./board.js";
 import Deck from "./deck.js";
 
 import { CardMoves, GamePhase, MarbleMoves } from "boomerdog-types";
@@ -348,7 +348,13 @@ export default class BoomerDog {
         if (!this.deck.playerHasCards(this.activePlayerIndex)) {
             this.isPlaying[this.activePlayerIndex] = false;
         }
-        return { status: 0, collateral: move.collateral };
+        return {
+            status: 0,
+            collateral: move.collateral,
+            swap:
+                +move.nodes[0] >= SWAP_MOVE_OFFSET &&
+                +move.nodes[0] < SEVEN_MOVE_OFFSET,
+        };
     }
 
     performRemainingMove(m: number, mi: number) {

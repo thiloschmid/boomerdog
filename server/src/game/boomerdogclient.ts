@@ -309,6 +309,7 @@ export default class BoomerDogHandler extends BoomerDog {
             this.emitCards(activePlayer.userId);
 
             response.collateral && this.emitGameEvent({ name: "marble:hit" });
+            response.swap && this.emitGameEvent({ name: "marble:swap" });
 
             if (this.gamePhase === GamePhase.WaitingForSevenMove) {
                 this.emitBoardData();
@@ -350,6 +351,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (!response.status) {
             this.emitCards(activePlayer.userId);
             response.collateral && this.emitGameEvent({ name: "marble:hit" });
+
             this.emitBoardData();
             this.emitGameState();
 
@@ -453,6 +455,8 @@ export default class BoomerDogHandler extends BoomerDog {
         if (response.status) {
             console.warn(response.message);
         } else {
+            response.collateral && this.emitGameEvent({ name: "marble:hit" });
+            response.swap && this.emitGameEvent({ name: "marble:swap" });
             this.emitBoardData();
             this.emitGameState();
 
@@ -474,7 +478,15 @@ export default class BoomerDogHandler extends BoomerDog {
                         this.orderRemainingMoves(remainingMoves);
 
                     const bestRem = remainingMovesList[0];
-                    super.performRemainingMove(bestRem.marble, bestRem.move);
+                    const response = super.performRemainingMove(
+                        bestRem.marble,
+                        bestRem.move
+                    );
+
+                    if (!response.status) {
+                        response.collateral &&
+                            this.emitGameEvent({ name: "marble:hit" });
+                    }
 
                     this.emitBoardData();
                     this.emitGameState();

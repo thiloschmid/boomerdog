@@ -21,7 +21,7 @@ import { computePartitions } from "../utils.js";
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
 // the node index
 export const SEVEN_MOVE_OFFSET = 1000;
-const SWAP_MOVE_OFFSET = 300; // same for swaps
+export const SWAP_MOVE_OFFSET = 300; // same for swaps
 
 export default class Board {
     nPlayers: number;
