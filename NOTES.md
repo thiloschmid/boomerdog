@@ -89,3 +89,15 @@ in `boomerdog/server/`
 For now, only [authentication through github](https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps) is supported.
 
 For development, a [proxy server](https://github.com/prose/gatekeeper) is required to bypass _CORS_ issues.
+
+# Game logic
+
+## Compiling possible moves
+
+For each turn, a list of possible moves is compiled. 
+
+### The seven card
+
+The most complicated case is the seven card. There is a situation where seven moves can be completed but not when the marble enters the endzone. Therefore, if computing the possible moves with a seven card, entering the endzone with marble $m$ should only be included if (7 - distance to the endzone) can be completed with the other marbles. 
+
+One further possibility exists. If the marble can fill the last spot in the endzone, it needs to be checked if the remainder can be completed with the teammate's marbles. 

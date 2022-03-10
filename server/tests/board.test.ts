@@ -22,27 +22,17 @@ test("Check setMarble", () => {
 test("check the intermediate nodes function", () => {
     let board = new Board(4);
 
-    expect(board.getIntermediateNodeIndices(62, 3)).toStrictEqual([
-        63, 0, 1, 2, 3,
-    ]);
-    expect(board.getIntermediateNodeIndices(12, 16)).toStrictEqual([
-        13, 14, 15, 16,
-    ]);
-    expect(board.getIntermediateNodeIndices(2, 62, true)).toStrictEqual([
-        1, 0, 63, 62,
-    ]);
-    expect(board.getIntermediateNodeIndices(8, 4, true)).toStrictEqual([
-        7, 6, 5, 4,
-    ]);
+    expect(board.computeMoveNodes(62, 3)).toStrictEqual([63, 0, 1, 2, 3]);
+    expect(board.computeMoveNodes(12, 16)).toStrictEqual([13, 14, 15, 16]);
+    expect(board.computeMoveNodes(2, 62, true)).toStrictEqual([1, 0, 63, 62]);
+    expect(board.computeMoveNodes(8, 4, true)).toStrictEqual([7, 6, 5, 4]);
 
     // check indices for entering the endzone
-    expect(board.getIntermediateNodeIndices(62, 102)).toStrictEqual([
+    expect(board.computeMoveNodes(62, 102)).toStrictEqual([
         63, 0, 100, 101, 102,
     ]);
 
-    expect(board.getIntermediateNodeIndices(62, 100)).toStrictEqual([
-        63, 0, 100,
-    ]);
+    expect(board.computeMoveNodes(62, 100)).toStrictEqual([63, 0, 100]);
 });
 
 test("check distance to entry node", () => {
@@ -95,40 +85,48 @@ test("Check possible destinations", () => {
 
     // note the order, the endzone destination comes last
 
-    expect(board.getPossibleDestinations(0, 62, 4)).toStrictEqual([
+    expect(
+        board.getPossibleDestinations(0, 62, 4).map((res) => res.nodes)
+    ).toStrictEqual([
         [63, 0, 1, 2],
         [63, 0, 100, 101],
     ]);
-    expect(board.getPossibleDestinations(0, 62, 5)).toStrictEqual([
+    expect(
+        board.getPossibleDestinations(0, 62, 5).map((res) => res.nodes)
+    ).toStrictEqual([
         [63, 0, 1, 2, 3],
         [63, 0, 100, 101, 102],
     ]);
-    expect(board.getPossibleDestinations(0, 62, 8)).toStrictEqual([
-        [63, 0, 1, 2, 3, 4, 5, 6],
-    ]);
+    expect(
+        board.getPossibleDestinations(0, 62, 8).map((res) => res.nodes)
+    ).toStrictEqual([[63, 0, 1, 2, 3, 4, 5, 6]]);
 
     board.setMarble(1, 0, 62); // 62 🔵 => should clear 62 🔴
     expect(board.marbleLocations[0][0]).toBe(-1);
-    expect(board.getPossibleDestinations(1, 62, 4)).toStrictEqual([
-        [63, 0, 1, 2],
-    ]);
+    expect(
+        board.getPossibleDestinations(1, 62, 4).map((res) => res.nodes)
+    ).toStrictEqual([[63, 0, 1, 2]]);
 
     board.setMarble(1, 1, 110);
-    expect(board.getPossibleDestinations(1, 110, 3)).toStrictEqual([
-        [111, 112, 113],
-    ]);
+    expect(
+        board.getPossibleDestinations(1, 110, 3).map((res) => res.nodes)
+    ).toStrictEqual([[111, 112, 113]]);
 
     board.setMarble(2, 0, 32);
     expect(board.nodes[32]).toBe(2);
     expect(board.getEndzoneDestination(2, 32, 3)).toBe(122);
-    expect(board.getPossibleDestinations(2, 32, 3)).toStrictEqual([
+    expect(
+        board.getPossibleDestinations(2, 32, 3).map((res) => res.nodes)
+    ).toStrictEqual([
         [33, 34, 35],
         [120, 121, 122],
     ]);
 
     board.setMarble(0, 2, 60);
     expect(board.nodes[60]).toBe(0);
-    expect(board.getPossibleDestinations(0, 60, 5)).toStrictEqual([
+    expect(
+        board.getPossibleDestinations(0, 60, 5).map((res) => res.nodes)
+    ).toStrictEqual([
         [61, 62, 63, 0, 1],
         [61, 62, 63, 0, 100],
     ]);
@@ -141,22 +139,26 @@ test("Check if a player can complete the seven card", () => {
     expect(board.playerCanMove(3, 3)).toBe(false);
 
     board.setMarble(0, 0, 13);
-    expect(board.getPossibleDestinations(0, 13, 10)).toStrictEqual([
-        [14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-    ]);
+    expect(
+        board.getPossibleDestinations(0, 13, 10).map((res) => res.nodes)
+    ).toStrictEqual([[14, 15, 16, 17, 18, 19, 20, 21, 22, 23]]);
     expect(board.playerCanMove(0, 10)).toBe(true);
     expect(board.playerCanCompleteSeven(0)).toBe(true);
+    expect(board.playerCanCompleteN(7, 0)).toBe(true);
 
     board.executeMove(1, 0, [-1, 16]);
     expect(board.nodes[16]).toBe(11);
     expect(board.nodes[13]).toBe(0);
-    expect(board.getPossibleDestinations(0, 13, 7)).toStrictEqual([]);
-    expect(board.getIntermediateNodeIndices(13, 20)).toStrictEqual([
+    expect(
+        board.getPossibleDestinations(0, 13, 7).map((res) => res.nodes)
+    ).toStrictEqual([]);
+    expect(board.computeMoveNodes(13, 20)).toStrictEqual([
         14, 15, 16, 17, 18, 19, 20,
     ]);
     expect(board.isReachable(0, [14, 15, 16, 17, 18, 19, 20])).toBe(false);
     expect(board.playerCanMove(0, 7)).toBe(false);
     expect(board.playerCanCompleteSeven(0)).toBe(false);
+    expect(board.playerCanCompleteN(7, 0)).toBe(false);
 });
 
 test("Check entering endzone", () => {
@@ -167,6 +169,6 @@ test("Check entering endzone", () => {
     console.log(board.getPossibleDestinations(0, 62, 5));
     board.setMarble(0, 0, 102);
     console.log(board.getPossibleDestinations(0, 62, 5));
-    board.setMarble(0, 1, 103)
-    console.log(board.isReachable(0, [63,0,100, 101, 102, 103]))
+    board.setMarble(0, 1, 103);
+    console.log(board.isReachable(0, [63, 0, 100, 101, 102, 103]));
 });

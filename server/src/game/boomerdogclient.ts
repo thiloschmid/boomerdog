@@ -6,7 +6,7 @@ import {
     CardMoves,
     MarbleMoves,
 } from "boomerdog-types";
-import { io, userMap } from "../api/index.js";
+import { io} from "../api/index.js";
 import { blue, green, red, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";
 
@@ -16,7 +16,6 @@ export default class BoomerDogHandler extends BoomerDog {
     nPlayers: number;
     players: User[];
     hasStarted: boolean;
-    playerStartingNext: number;
 
     constructor(gameId: string, gameName: string, nPlayers: number) {
         super(nPlayers);
@@ -26,7 +25,6 @@ export default class BoomerDogHandler extends BoomerDog {
         this.nPlayers = nPlayers;
         this.players = new Array<User>();
         this.hasStarted = false;
-        this.playerStartingNext = 0;
     }
 
     /* ☎️ EMITTER METHODS
@@ -260,7 +258,6 @@ export default class BoomerDogHandler extends BoomerDog {
         if (super.swapIsComplete()) {
             super.swap();
             this.emitCards();
-            this.playerStartingNext = (this.roundNumber + 1) % this.nPlayers;
             this.startTurn();
         }
         this.emitGameState();

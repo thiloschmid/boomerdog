@@ -30,13 +30,13 @@ export default class BoomerDog {
     deck;
 
     activePlayerIndex: number;
+    playerStartingNext: number;
 
     possibleMoves: CardMoves[];
 
     gamePhase: GamePhase;
     roundNumber: number;
 
-    // initially true, becomes false after folding or playing all cards
     isPlaying: boolean[];
     hasFolded: boolean[];
     isFinished: boolean[];
@@ -53,19 +53,31 @@ export default class BoomerDog {
         this.board = new Board(nPlayers);
         this.deck = new Deck(nPlayers);
 
-        this.possibleMoves = Array.from({ length: 6 }, (e) => [[], [], [], []]);
+        this.possibleMoves = Array.from({ length: this.nPlayers }, (e) => [
+            [],
+            [],
+            [],
+            [],
+        ]);
         this.remainingMoves = null;
 
+        this.playerStartingNext = 0;
         this.activePlayerIndex = 0;
         this.gamePhase = GamePhase.Waiting;
         this.roundNumber = 0;
 
-        this.isPlaying = [true, true, true, true];
-        this.hasFolded = [false, false, false, false];
-        this.isFinished = [false, false, false, false];
-        this.playingWith = [0, 1, 2, 3]; // changes once a player finishes
-        this.swapCards = [-1, -1, -1, -1]; // store the card index
+        // player information
+        this.isPlaying = Array(this.nPlayers).fill(true);
+        this.hasFolded = Array(this.nPlayers).fill(false);
+        this.isFinished = Array(this.nPlayers).fill(false);
+        // allows playing with the teammate's marble once finished
+        this.playingWith = [...Array(this.nPlayers).keys()]; // like range()
 
+        // index of the card that the player means to swap, or -1 if no card
+        // has been chosen (yet)
+        this.swapCards = Array(this.nPlayers).fill(-1);
+
+        // only relevant if a seven card or a joker 7 is played
         this.remainderForSevenCard = 7;
     }
 
@@ -73,16 +85,19 @@ export default class BoomerDog {
 
     setupRound() {
         console.debug(`${blue(`Round ${this.roundNumber} started`)}`);
+
         // first distribute 6 cards, then 5, ..., down to 2 cards
         this.deck.distributeCards(6 - (this.roundNumber % 5));
 
-        this.hasFolded = [false, false, false, false];
-        this.isPlaying = [true, true, true, true];
+        // reset player information
+        this.isPlaying.fill(true);
+        this.hasFolded.fill(false);
 
         // set new game phase
         this.gamePhase = GamePhase.Swapping;
 
         this.activePlayerIndex = this.roundNumber % 4;
+        this.playerStartingNext = (this.roundNumber + 1) % this.nPlayers;
     }
 
     setupTurn() {
@@ -99,11 +114,13 @@ export default class BoomerDog {
     }
 
     gameIsFinished() {
-        // 🏁
-        return (
-            (this.isFinished[0] && this.isFinished[2]) ||
-            (this.isFinished[1] && this.isFinished[3])
-        );
+        // checks if two team mates are finished 🏁
+        for (let i = 0; i < this.nPlayers / 2; i++) {
+            if (this.isFinished[i] && this.isFinished[i + this.nPlayers / 2]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     storeSwapCard(p: number, c: number) {
@@ -130,7 +147,7 @@ export default class BoomerDog {
             ];
         }
 
-        this.swapCards = [-1, -1, -1, -1];
+        this.swapCards.fill(-1);
         this.gamePhase = GamePhase.Playing;
     }
 
@@ -151,21 +168,30 @@ export default class BoomerDog {
         } while (!this.isPlaying[this.activePlayerIndex]);
     }
 
+    computePlayingWith() {
+        this.playingWith = this.isFinished.map((value, i) =>
+            value ? (i + 2) % this.nPlayers : i
+        );
+    }
+
+    computeIsFinished() {
+        this.isFinished = this.isFinished.map((e, i) =>
+            this.playerIsFinished(i)
+        );
+    }
+
     finalizeTurn() {
         console.debug(
             `${blue(`Player ${this.activePlayerIndex}'s turn ended`)}`
         );
         // check if the player is finished
         if (this.playerIsFinished(this.playingWith[this.activePlayerIndex])) {
-            this.isFinished = [...Array(this.nPlayers).keys()].map((p) =>
-                this.playerIsFinished(p)
-            );
+            this.computeIsFinished();
+
             if (this.gameIsFinished()) {
                 return;
             }
-            this.playingWith = this.isFinished.map((value, i) =>
-                value ? (i + 2) % this.nPlayers : i
-            );
+            this.computePlayingWith();
         }
         // check if the player still has cards left
         if (!this.deck.playerHasCards(this.activePlayerIndex)) {
@@ -221,7 +247,14 @@ export default class BoomerDog {
                     this.board.getPossibleDestinations(
                         this.playingWith[this.activePlayerIndex],
                         n,
-                        move
+                        move,
+                        // if the move is with a seven card, also provide the
+                        // corresponding remainder in case the move is chosen
+                        // this is needed to assert the seven moves can be
+                        // completed
+                        move > 70
+                            ? this.remainderForSevenCard - move + 70
+                            : undefined
                     )
                 )
             );
@@ -271,7 +304,9 @@ export default class BoomerDog {
             `${blue(
                 `Player ${this.activePlayerIndex} plays card ${
                     this.deck.hands[this.activePlayerIndex][c]?.value
-                } and moves [${moves?.[mi]}]`
+                } and moves ${moves?.[mi].nodes}. (c = ${
+                    moves?.[mi].collateral
+                })`
             )}`
         );
 
@@ -284,14 +319,27 @@ export default class BoomerDog {
 
         /* if the move comes from a 7️⃣, or a joker 🃏 acting as a 7️⃣ */
         if (moves[mi].nodes[0] >= SEVEN_MOVE_OFFSET) {
-            console.log(`seven-move`);
+            // set the remaining moves
             this.remainderForSevenCard -= moves[mi].nodes.length;
 
+            // check if there are moves remaining
             if (this.remainderForSevenCard) {
+                // set the game phase such that the turn will not end yet
                 this.gamePhase = GamePhase.WaitingForSevenMove;
+
+                // check if the player has just finished, i.e. he has to finish
+                // his seven moves with his teammate's marble
+                if (this.playerIsFinished(this.activePlayerIndex)) {
+                    this.computePlayingWith();
+                }
+
+                // compute the remaining moves to emit to the player
                 this.computeRemainingMoves();
                 return { status: 0 };
             } else {
+                // the seven moves have been completed, return to default
+                // values and let the turn end, which it does once the correct
+                // game phase is set
                 this.gamePhase = GamePhase.Playing;
                 this.remainderForSevenCard = 7; // reset to previous value
             }
@@ -305,11 +353,18 @@ export default class BoomerDog {
     }
 
     performRemainingMove(m: number, mi: number) {
+        if (this.gamePhase !== GamePhase.WaitingForSevenMove) {
+            return { status: 1, message: "Wrong game phase" };
+        }
         if (!this.remainingMoves) {
             return { status: 1, message: "Remaining moves are not defined" };
         }
         const moves = this.remainingMoves[m];
-        console.log(`${blue(`Player moves ${moves?.[mi]} from a seven card`)}`);
+        console.log(
+            `${blue(
+                `Player moves ${moves?.[mi].nodes}. (c = ${moves?.[mi].collateral})`
+            )}`
+        );
 
         this.board.executeMove(
             this.playingWith[this.activePlayerIndex],
@@ -327,7 +382,11 @@ export default class BoomerDog {
         this.remainderForSevenCard -= moves[mi].nodes.length;
 
         if (this.remainderForSevenCard) {
-            this.gamePhase = GamePhase.WaitingForSevenMove;
+            // check if the player has just finished, i.e. he has to finish
+            // his seven moves with his teammate's marble
+            if (this.playerIsFinished(this.activePlayerIndex)) {
+                this.computePlayingWith();
+            }
             this.computeRemainingMoves();
 
             return { status: 0 };
