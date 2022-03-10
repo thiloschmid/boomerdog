@@ -36,6 +36,10 @@ export interface PerformRemainingMovePayload extends GameIdentifierPayload, User
     m: number;
     mi: number;
 }
+export interface GameEvent {
+    name: string;
+    data?: any;
+}
 export interface ServerToClientEvents {
     "games:update": (payload: GameData[]) => void;
     "user:update": (payload: User) => void;
@@ -45,6 +49,7 @@ export interface ServerToClientEvents {
     "cards:update": (payload: (CardBase | null)[]) => void;
     "moves:update": (payload: CardMoves[]) => void;
     "remaining_moves:update": (payload: MarbleMoves[]) => void;
+    "game:event": (payload: GameEvent) => void;
 }
 export interface CardClickedResponse extends IoResponse {
     possibleMoves: number[][][];

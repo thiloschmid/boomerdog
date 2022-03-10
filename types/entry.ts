@@ -13,6 +13,7 @@ import {
     ServerToClientEvents,
     SocketData,
     UserIdentifierPayload,
+    GameEvent,
 } from "./socketio";
 
 interface User {
@@ -85,4 +86,5 @@ export {
     ServerToClientEvents,
     SocketData,
     UserIdentifierPayload,
+    GameEvent,
 };

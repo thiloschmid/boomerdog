@@ -14,6 +14,7 @@ import {
     GamePhase,
     IoResponse,
     User,
+    GameEvent,
 } from "boomerdog-types";
 
 const placeHolderCards: CardBase[] = [
@@ -98,6 +99,23 @@ const Game = ({
             });
     };
 
+    const handleGameEvent = (event: GameEvent) => {
+        console.log(event.name);
+        let audio;
+        switch (event.name) {
+            case "player:active":
+                audio = new Audio("audio/mixkit-message-pop-alert-2354.mp3");
+                break;
+            case "game:finished":
+                audio = new Audio("audio/level-win-6416.mp3");
+                break;
+            case "marble:hit":
+                audio = new Audio("audio/karate-chop-6357.mp3");
+                break;
+        }
+        audio && audio.play();
+    };
+
     React.useEffect(() => {
         if (authToken) {
             const authSocket = getAuthenticatedSocket(authToken);
@@ -125,6 +143,9 @@ const Game = ({
                 console.log("cards updated", payload);
                 setCards(payload);
                 setSelectedCard(null);
+            });
+            authSocket.on("game:event", (payload: GameEvent) => {
+                handleGameEvent(payload);
             });
             setSocket(authSocket);
         } else {

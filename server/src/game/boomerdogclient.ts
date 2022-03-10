@@ -5,8 +5,9 @@ import {
     GameState,
     CardMoves,
     MarbleMoves,
+    GameEvent,
 } from "boomerdog-types";
-import { io} from "../api/index.js";
+import { io } from "../api/index.js";
 import { blue, green, red, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";
 
@@ -32,6 +33,11 @@ export default class BoomerDogHandler extends BoomerDog {
      * a particular recipient. If it is not specified, all players will
      * receive the data.
      */
+
+    emitGameEvent(event: GameEvent, userId?: string) {
+        // e.g. sounds
+        io.to(userId || this.gameId).emit("game:event", event);
+    }
 
     emitGameData(userId?: string) {
         // console.debug(yellow(`Emit game data`))
@@ -204,6 +210,7 @@ export default class BoomerDogHandler extends BoomerDog {
         super.setupTurn(); // this sets the possible moves
         const activePlayer = this.getActivePlayer();
         if (activePlayer) {
+            this.emitGameEvent({ name: "player:active" }, activePlayer.userId);
             this.emitPossibleMoves();
         } else {
             // AI opponent
@@ -219,7 +226,10 @@ export default class BoomerDogHandler extends BoomerDog {
         this.emitBoardData();
 
         if (super.gameIsFinished()) {
-            // never happens
+            this.emitGameEvent({
+                name: "game:finished",
+                data: { victoriousTeam: this.getVictoriousTeam() },
+            });
             return;
         }
         if (super.roundIsFinished()) {
@@ -298,6 +308,8 @@ export default class BoomerDogHandler extends BoomerDog {
         if (!response.status) {
             this.emitCards(activePlayer.userId);
 
+            response.collateral && this.emitGameEvent({ name: "marble:hit" });
+
             if (this.gamePhase === GamePhase.WaitingForSevenMove) {
                 this.emitBoardData();
                 this.emitGameState();
@@ -337,6 +349,7 @@ export default class BoomerDogHandler extends BoomerDog {
 
         if (!response.status) {
             this.emitCards(activePlayer.userId);
+            response.collateral && this.emitGameEvent({ name: "marble:hit" });
             this.emitBoardData();
             this.emitGameState();
 
