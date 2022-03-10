@@ -169,6 +169,7 @@ export default class BoomerDog {
     }
 
     computePlayingWith() {
+        this.computeIsFinished();
         this.playingWith = this.isFinished.map((value, i) =>
             value ? (i + 2) % this.nPlayers : i
         );
