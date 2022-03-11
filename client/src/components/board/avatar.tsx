@@ -6,13 +6,16 @@ import { DiscardIcon, ExchangeIcon } from "./icons";
 export const avatarSize = 80;
 const avatarStrokeWidth = 6;
 const avatarRadius = avatarSize / 2 - avatarStrokeWidth;
-const textHeight = 15;
+export const avatarTextHeight = 15;
 const iconSize = 30;
 
 const pathlength = 2 * Math.PI * (avatarRadius - 3);
 
 interface AvatarProps {
     size: { width: number; height: number };
+    imagePosition: { x: number; y: number };
+    textPosition: "top" | "bottom";
+    iconPosition: "right" | "left";
     avatarUrl: string;
     player: User;
     position: { x: number; y: number; index: number };
@@ -25,6 +28,9 @@ interface AvatarProps {
 }
 const Avatar = ({
     size,
+    imagePosition,
+    textPosition,
+    iconPosition,
     player,
     avatarUrl,
     position,
@@ -35,28 +41,6 @@ const Avatar = ({
     hasFolded,
     cardsIcon,
 }: AvatarProps) => {
-    const imagePosition = [
-        { x: size.width - avatarSize, y: 0 },
-        { x: 0, y: 0 },
-        { x: 0, y: size.height - avatarSize },
-        { x: size.width - avatarSize, y: size.height - avatarSize },
-    ][position.index];
-
-    const textPosition = [
-        {
-            x: size.width - avatarSize / 2,
-            y: size.height - 5,
-            anchor: "middle",
-        },
-        { x: avatarSize / 2, y: size.height - 5, anchor: "middle" },
-        { x: avatarSize / 2, y: textHeight, anchor: "middle" },
-        {
-            x: size.width - avatarSize / 2,
-            y: textHeight,
-            anchor: "middle",
-        },
-    ][position.index];
-
     const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
 
     return (
@@ -115,28 +99,32 @@ const Avatar = ({
                     href={avatarUrl}
                     clipPath={"url(#circleView"}
                 />
+                {/* 📛 player name */}
+                <text
+                    fontWeight="bold"
+                    height={avatarTextHeight}
+                    // x={textPosition.x}
+                    x={avatarSize / 2}
+                    y={
+                        textPosition === "top"
+                            ? -5
+                            : avatarSize + avatarTextHeight + 5
+                    }
+                    fill={useColorModeValue("#2D3748", "#EDF2F7")}
+                    // textAnchor={textPosition.anchor}
+                    textAnchor="middle"
+                >
+                    {player?.name
+                        ? player.name.length > 10
+                            ? player.name.slice(0, 11)
+                            : player.name
+                        : "AI"}
+                </text>
             </g>
-            {/* 📛 player name */}
-            <text
-                fontWeight="bold"
-                height={textHeight}
-                x={textPosition.x}
-                y={textPosition.y}
-                fill={useColorModeValue("#2D3748", "#EDF2F7")}
-                textAnchor={textPosition.anchor}
-            >
-                {player?.name
-                    ? player.name.length > 10
-                        ? player.name.slice(0, 11)
-                        : player.name
-                    : "QAI"}
-            </text>
             {/* icons */}
             <g
                 transform={`translate(${
-                    position.index === 2 || position.index === 1
-                        ? size.width - iconSize
-                        : 0
+                    iconPosition === "right" ? size.width - iconSize : 0
                 },0)`}
             >
                 {/* swap indicator */}
@@ -175,9 +163,9 @@ const Avatar = ({
                         <text
                             fontWeight="bold"
                             textAnchor="left"
-                            y={size.height / 2 + textHeight / 2}
+                            y={size.height / 2 + avatarTextHeight / 2}
                             x={10}
-                            height={textHeight}
+                            height={avatarTextHeight}
                             fill="#2D3748"
                         >
                             {cardsIcon.number}

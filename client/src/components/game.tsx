@@ -103,14 +103,41 @@ const Game = ({
         console.log(event.name);
         let audio;
         switch (event.name) {
-            case "player:active":
+            case "marble:moved":
                 audio = new Audio("audio/mixkit-message-pop-alert-2354.mp3");
                 break;
+            case "player:active":
+                // audio = new Audio("audio/mixkit-happy-bell-alert-601.wav");
+                audio = new Audio("audio/mixkit-long-pop-2358.wav");
+                break;
             case "game:finished":
-                audio = new Audio("audio/level-win-6416.mp3");
+                if (player !== null && gameData !== null) {
+                    const playerIndex = gameData?.players
+                        .map((p) => p.userId)
+                        .indexOf(player.userId);
+
+                    if (
+                        event.data?.victoriousTeam ===
+                        playerIndex % (gameData.nPlayers / 2)
+                    ) {
+                        audio = new Audio("audio/level-win-6416.mp3");
+                    } else {
+                        audio = new Audio(
+                            "audio/mixkit-sad-game-over-trombone-471.wav"
+                        );
+                    }
+                }
                 break;
             case "marble:hit":
                 audio = new Audio("audio/karate-chop-6357.mp3");
+                break;
+            case "marble:swap":
+                audio = new Audio("audio/whoosh-6316.mp3");
+                break;
+            case "marble:enter_endzone":
+                audio = new Audio(
+                    "audio/mixkit-quick-win-video-game-notification-269.wav"
+                );
                 break;
         }
         audio && audio.play();

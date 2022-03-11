@@ -437,7 +437,7 @@ export default class Board {
         if (move[0] === -1) {
             if (nOld !== -1) {
                 console.warn(`Tried going out with marble not in base`);
-                return;
+                return [-1, -1];
             }
             let outIndex = 16 * p;
             // clear any marble
@@ -446,7 +446,7 @@ export default class Board {
             // set the marble to its new blocking position
             this.nodes[outIndex] = 10 + p;
             this.marbleLocations[p][m] = outIndex;
-            return;
+            return [nOld, outIndex];
         }
         if (move[0] >= SWAP_MOVE_OFFSET && move[0] < SEVEN_MOVE_OFFSET) {
             // switch
@@ -463,7 +463,7 @@ export default class Board {
             // update nodes
             this.nodes[nSwap] = p;
             this.nodes[nSwip] = pSwap;
-            return;
+            return [nSwip, nSwap];
         }
         if (move[0] >= SEVEN_MOVE_OFFSET) {
             // walking with a seven
@@ -505,7 +505,8 @@ export default class Board {
         }
 
         // update marbleLocations
-        this.marbleLocations[p][m] = move[move.length - 1];
+        this.marbleLocations[p][m] = nNew;
+        return [nOld, nNew];
     }
 
     /**

@@ -34,11 +34,6 @@ export default class BoomerDogHandler extends BoomerDog {
      * receive the data.
      */
 
-    emitGameEvent(event: GameEvent, userId?: string) {
-        // e.g. sounds
-        io.to(userId || this.gameId).emit("game:event", event);
-    }
-
     emitGameData(userId?: string) {
         // console.debug(yellow(`Emit game data`))
         io.to(userId || this.gameId).emit(
@@ -93,6 +88,33 @@ export default class BoomerDogHandler extends BoomerDog {
                 io
                     .to(this.players[p].userId)
                     .emit("cards:update", super.getPlayerCards(p));
+        }
+    }
+
+    emitGameEvent(event: GameEvent, userId?: string) {
+        // e.g. sounds
+        io.to(userId || this.gameId).emit("game:event", event);
+    }
+
+    handleResponse(response: {
+        collateral?: number;
+        swap?: boolean;
+        enterEndzone?: boolean;
+        from?: number;
+        to?: number;
+    }) {
+        if (response.collateral) {
+            this.emitGameEvent({ name: "marble:hit" });
+        }
+        if (response.swap) {
+            this.emitGameEvent({ name: "marble:swap" });
+        } else if (response.enterEndzone) {
+            this.emitGameEvent({ name: "marble:enter_endzone" });
+        } else {
+            this.emitGameEvent({
+                name: "marble:moved",
+                data: { from: response.from, to: response.to },
+            });
         }
     }
 
@@ -308,8 +330,8 @@ export default class BoomerDogHandler extends BoomerDog {
         if (!response.status) {
             this.emitCards(activePlayer.userId);
 
-            response.collateral && this.emitGameEvent({ name: "marble:hit" });
-            response.swap && this.emitGameEvent({ name: "marble:swap" });
+            // emit appropriate game events
+            this.handleResponse(response);
 
             if (this.gamePhase === GamePhase.WaitingForSevenMove) {
                 this.emitBoardData();
@@ -455,8 +477,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (response.status) {
             console.warn(response.message);
         } else {
-            response.collateral && this.emitGameEvent({ name: "marble:hit" });
-            response.swap && this.emitGameEvent({ name: "marble:swap" });
+            this.handleResponse(response);
             this.emitBoardData();
             this.emitGameState();
 
@@ -484,8 +505,7 @@ export default class BoomerDogHandler extends BoomerDog {
                     );
 
                     if (!response.status) {
-                        response.collateral &&
-                            this.emitGameEvent({ name: "marble:hit" });
+                        this.handleResponse(response);
                     }
 
                     this.emitBoardData();

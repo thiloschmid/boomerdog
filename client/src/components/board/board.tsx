@@ -14,7 +14,7 @@ import {
 import { cardToSvg } from "../cards/cards";
 import { boardNodes4 } from "./board_data_4";
 import { boardNodes6 } from "./board_data_6";
-import BoomerdogAvatar, { avatarSize } from "./avatar";
+import BoomerdogAvatar, { avatarSize, avatarTextHeight } from "./avatar";
 import {
     CardMoves,
     CardBase,
@@ -97,24 +97,139 @@ const Board = ({
             ? { height: 800, width: 800 }
             : { height: 800, width: 800 };
 
+    const STACK_SIZE =
+        gameData.nPlayers === 4
+            ? {
+                  width: 100,
+                  height: 140,
+              }
+            : { width: 95, height: 132 };
+
     const NODE_RADIUS =
         gameData.nPlayers === 4
             ? { inner: 12, outer: 20 }
             : { inner: 10, outer: 15 };
     const NODE_STROKEWIDTH = gameData.nPlayers === 4 ? 4 : 3;
 
-    const avatarPositions =
+    const avatarPositions: {
+        x: number;
+        y: number;
+        imagePosition: { x: number; y: number };
+        textPosition: "bottom" | "top";
+        iconPosition: "right" | "left";
+    }[] =
         gameData.nPlayers === 4
             ? [
-                  { x: BOARD_SIZE.width - playerBoxSize.width - 10, y: 10 },
-                  { x: 10, y: 10 },
-                  { x: 10, y: BOARD_SIZE.height - playerBoxSize.height - 10 },
+                  // player 0
+                  {
+                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
+                      y: 10,
+                      imagePosition: {
+                          x: playerBoxSize.width - avatarSize,
+                          y: 0,
+                      },
+                      textPosition: "bottom",
+                      iconPosition: "left",
+                  },
+                  // player 1
+                  {
+                      x: 10,
+                      y: 10,
+                      imagePosition: { x: 0, y: 0 },
+                      textPosition: "bottom",
+                      iconPosition: "right",
+                  },
+                  // player 2
+                  {
+                      x: 10,
+                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                      imagePosition: {
+                          x: 0,
+                          y: playerBoxSize.height - avatarSize,
+                      },
+                      textPosition: "top",
+                      iconPosition: "right",
+                  },
+                  // player 3
                   {
                       x: BOARD_SIZE.width - playerBoxSize.width - 10,
                       y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                      imagePosition: {
+                          x: playerBoxSize.width - avatarSize,
+                          y: playerBoxSize.height - avatarSize,
+                      },
+                      textPosition: "top",
+                      iconPosition: "left",
                   },
               ]
-            : [];
+            : [
+                  // player 0
+                  {
+                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
+                      y: 10,
+                      imagePosition: {
+                          x: playerBoxSize.width - avatarSize,
+                          y: 0,
+                      },
+                      textPosition: "bottom",
+                      iconPosition: "left",
+                  },
+                  // player 1
+                  {
+                      x: BOARD_SIZE.width / 2 - playerBoxSize.width / 2,
+                      y: 10,
+                      imagePosition: {
+                          x: playerBoxSize.width - avatarSize,
+                          y: 0,
+                      },
+                      textPosition: "bottom",
+                      iconPosition: "left",
+                  },
+                  // player 2
+                  {
+                      x: 10,
+                      y: 10,
+                      imagePosition: {
+                          x: 0,
+                          y: 0,
+                      },
+                      textPosition: "bottom",
+                      iconPosition: "right",
+                  },
+                  // player 3
+                  {
+                      x: 10,
+                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                      imagePosition: {
+                          x: 0,
+                          y: playerBoxSize.height - avatarSize,
+                      },
+                      textPosition: "top",
+                      iconPosition: "right",
+                  },
+                  // player 4
+                  {
+                      x: BOARD_SIZE.width / 2 - playerBoxSize.width / 2,
+                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                      imagePosition: {
+                          x: 0,
+                          y: playerBoxSize.height - avatarSize,
+                      },
+                      textPosition: "top",
+                      iconPosition: "right",
+                  },
+                  // player 5
+                  {
+                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
+                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                      imagePosition: {
+                          x: playerBoxSize.width - avatarSize,
+                          y: playerBoxSize.height - avatarSize,
+                      },
+                      textPosition: "top",
+                      iconPosition: "left",
+                  },
+              ];
 
     const COLORS =
         gameData.nPlayers === 4
@@ -375,6 +490,9 @@ const Board = ({
                             <BoomerdogAvatar
                                 key={`avatar-${i}`}
                                 size={playerBoxSize}
+                                imagePosition={pos.imagePosition}
+                                textPosition={pos.textPosition}
+                                iconPosition={pos.iconPosition}
                                 avatarUrl={
                                     i < gameData.players.length
                                         ? gameData.players[i].avatarUrl
@@ -518,20 +636,33 @@ const Board = ({
                                     href={cardToSvg(card)}
                                     cursor="pointer"
                                     onClick={() => setExpandCards(!expandCards)}
-                                    x={BOARD_SIZE.width / 2 - 120 / 2}
-                                    y={BOARD_SIZE.height / 2 - 168 / 2}
-                                    width="120"
-                                    height="168"
+                                    x={
+                                        BOARD_SIZE.width / 2 -
+                                        STACK_SIZE.width / 2
+                                    }
+                                    y={
+                                        BOARD_SIZE.height / 2 -
+                                        STACK_SIZE.height / 2
+                                    }
+                                    width={STACK_SIZE.width}
+                                    height={STACK_SIZE.height}
                                     key={`stack-card-${i}`}
                                 />
                             ) : (
                                 // render the remaining cards only if expanded
                                 expandCards && (
                                     <image
-                                        x={340 - 30 * (stack.length - 1 - i)}
-                                        y="316"
-                                        width="120"
-                                        height="168"
+                                        x={
+                                            BOARD_SIZE.width / 2 -
+                                            STACK_SIZE.width / 2 -
+                                            30 * (stack.length - 1 - i)
+                                        }
+                                        y={
+                                            BOARD_SIZE.height / 2 -
+                                            STACK_SIZE.height / 2
+                                        }
+                                        width={STACK_SIZE.width}
+                                        height={STACK_SIZE.height}
                                         href={cardToSvg(card)}
                                         key={`stack-card-${i}`}
                                     />
@@ -544,13 +675,13 @@ const Board = ({
                         {stepsRemaining !== null && (
                             <Popup
                                 top="1%"
-                                text={`Complete the remaining ${stepsRemaining} moves`}
+                                text={`${stepsRemaining} steps remaining`}
                             />
                         )}
                         {popoverIsOpen && (
                             <Popup
-                                top="30%"
-                                text={`Select the target node`}
+                                top={gameData.nPlayers === 4 ? "30%" : "36%"}
+                                text={`Select the target`}
                                 close={() => {
                                     setPopoverIsOpen(false);
                                     setSelectedMarble(null);
@@ -562,7 +693,17 @@ const Board = ({
                                 <Button
                                     pointerEvents={"auto"}
                                     position="absolute"
-                                    bottom="30%"
+                                    h="5%"
+                                    bottom={
+                                        gameData.nPlayers === 4
+                                            ? "30%"
+                                            : "47.5%"
+                                    }
+                                    left={
+                                        gameData.nPlayers === 6
+                                            ? "60%"
+                                            : undefined
+                                    }
                                     colorScheme="red"
                                     m={0}
                                     onClick={fold}
@@ -573,13 +714,18 @@ const Board = ({
                         {gameState?.gamePhase === GamePhase.Swapping && (
                             <>
                                 <Popup
-                                    top="30%"
+                                    top={
+                                        gameData.nPlayers === 4 ? "30%" : "36%"
+                                    }
                                     text={`Choose a card to exchange with your team mate`}
                                 />
                                 <Button
                                     pointerEvents={"auto"}
                                     position="absolute"
-                                    bottom="30%"
+                                    h="5%"
+                                    bottom={
+                                        gameData.nPlayers === 4 ? "30%" : "36%"
+                                    }
                                     colorScheme="teal"
                                     m={0}
                                     onClick={swap}
@@ -595,7 +741,14 @@ const Board = ({
                             selectedCardIndex !== null &&
                             cards[selectedCardIndex]?.value === 0 && (
                                 <>
-                                    <Popup top="30%" text={`Specify move`}>
+                                    <Popup
+                                        top={
+                                            gameData.nPlayers === 4
+                                                ? "30%"
+                                                : "36%"
+                                        }
+                                        text={`Specify move`}
+                                    >
                                         <RadioGroup
                                             onChange={setJokerMove}
                                             value={jokerMove}

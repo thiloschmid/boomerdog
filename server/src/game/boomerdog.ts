@@ -309,7 +309,7 @@ export default class BoomerDog {
             )}`
         );
 
-        this.board.executeMove(
+        const [from, to] = this.board.executeMove(
             this.playingWith[this.activePlayerIndex],
             m,
             move.nodes
@@ -348,12 +348,21 @@ export default class BoomerDog {
         if (!this.deck.playerHasCards(this.activePlayerIndex)) {
             this.isPlaying[this.activePlayerIndex] = false;
         }
+
+        let targetNode = move.nodes[move.nodes.length - 1];
+        if (targetNode >= SEVEN_MOVE_OFFSET) {
+            targetNode -= SEVEN_MOVE_OFFSET;
+        }
+
         return {
             status: 0,
+            from: from,
+            to: to,
             collateral: move.collateral,
             swap:
                 +move.nodes[0] >= SWAP_MOVE_OFFSET &&
                 +move.nodes[0] < SEVEN_MOVE_OFFSET,
+            enterEndzone: !this.board.isRegularIndex(targetNode),
         };
     }
 
@@ -369,7 +378,7 @@ export default class BoomerDog {
             `${blue(`Player moves ${move.nodes}. (c = ${move.collateral})`)}`
         );
 
-        this.board.executeMove(
+        const [from, to] = this.board.executeMove(
             this.playingWith[this.activePlayerIndex],
             m,
             move.nodes
@@ -392,17 +401,35 @@ export default class BoomerDog {
             }
             this.computeRemainingMoves();
 
-            return { status: 0, collateral: move.collateral };
-        } else {
-            this.gamePhase = GamePhase.Playing;
-            this.remainderForSevenCard = 7; // reset to previous value
+            return {
+                status: 0,
+                collateral: move.collateral,
+                from: from,
+                to: to,
+            };
         }
+
+        // the remainder is gone
+        this.gamePhase = GamePhase.Playing;
+        this.remainderForSevenCard = 7; // reset to previous value
 
         // check if the player is finished playing
         if (!this.deck.playerHasCards(this.activePlayerIndex)) {
             this.isPlaying[this.activePlayerIndex] = false;
         }
-        return { status: 0, collateral: move.collateral };
+
+        let targetNode = move.nodes[move.nodes.length - 1];
+        if (targetNode >= SEVEN_MOVE_OFFSET) {
+            targetNode -= SEVEN_MOVE_OFFSET;
+        }
+
+        return {
+            status: 0,
+            collateral: move.collateral,
+            enterEndzone: !this.board.isRegularIndex(targetNode),
+            from: from,
+            to: to,
+        };
     }
 
     fold() {
