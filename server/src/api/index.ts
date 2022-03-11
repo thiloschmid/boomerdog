@@ -97,7 +97,7 @@ const onConnection = async (socket: ServerSocket) => {
             // create User
 
             user = {
-                name: data.name,
+                name: data.name || data.login, // if name is not set, show the login
                 userId: `${data.id}`,
                 avatarUrl: data.avatar_url,
             };
