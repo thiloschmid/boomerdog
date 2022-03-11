@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Box, Button, Flex, Heading, HStack, Stack } from "@chakra-ui/react";
+import { Box, Button, Flex, Stack } from "@chakra-ui/react";
 import GameBrowser from "./game_browser";
 import BoardWrapper from "./board/board_wrapper";
 import Cards from "./cards/cards";

@@ -1,10 +1,12 @@
 import * as React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ChakraProvider, theme, useDisclosure } from "@chakra-ui/react";
+import { ChakraProvider, useDisclosure } from "@chakra-ui/react";
 
 import Layout from "./components/layout";
 import Game from "./components/game";
 import Login from "./components/login";
+
+import theme from "./theme"
 
 import {
     initialState,
