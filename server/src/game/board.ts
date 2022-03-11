@@ -248,8 +248,8 @@ export default class Board {
     /**
      *
      * @param p - The player index
-     * @param n - The node index
-     * @param move - The requested move
+     * @param m - The marble index
+     * @param moveId - The requested move
      * @param remainder - If 7 is played to enter the endzone, specify how many
      * moves the player must be able to complete after entering the endzone
      * @returns - An array of the nodes which are reachable by the given move,
@@ -258,13 +258,13 @@ export default class Board {
     getPossibleDestinations(
         p: number,
         m: number,
-        move: number,
+        moveId: number,
         remainder?: number
     ): { nodes: number[]; collateral?: number }[] {
         const n = this.marbleLocations[p][m];
         let sevenPlayed = false;
         let distance;
-        switch (move) {
+        switch (moveId) {
             // handle going out
             case 0:
                 if (n === -1 && this.canGoOut(p)) {
@@ -292,7 +292,7 @@ export default class Board {
             case 11:
             case 12:
             case 13:
-                distance = move;
+                distance = moveId;
                 break;
 
             // handle switcheroos
@@ -313,7 +313,7 @@ export default class Board {
             case 76:
             case 77:
                 sevenPlayed = true;
-                distance = move - 70;
+                distance = moveId - 70;
                 // TODO: check if the 7 moves can be completed
                 break;
             default:
@@ -344,7 +344,7 @@ export default class Board {
                         console.warn("No remainder specified for seven move!");
                         return moves;
                     }
-                    if (this.playerCanCompleteN(remainder, p, m)) {
+                    if (this.playerCanCompleteDistance(remainder, p, m)) {
                         // encode that marbles on the way are blasted by adding an offset
                         moves.push({
                             nodes: moveNodes.map(
@@ -383,7 +383,7 @@ export default class Board {
                     }
                     if (
                         remainder &&
-                        !this.playerCanCompleteN(remainder, p, m)
+                        !this.playerCanCompleteDistance(remainder, p, m)
                     ) {
                         console.debug(
                             `Player can't complete ${remainder} moves when entering the endzone`
@@ -399,7 +399,7 @@ export default class Board {
                         } else {
                             // the player can finish
                             if (
-                                !this.playerCanCompleteN(
+                                !this.playerCanCompleteDistance(
                                     distance + remainder - stepsToFinish,
                                     (p + this.nPlayers / 2) % this.nPlayers
                                 )
@@ -555,58 +555,71 @@ export default class Board {
         return false;
     }
 
-    // playerCanCompleteSeven(p: number) {
-    //     // ⚠️ legacy
-    //     // 💁 it is not necessary to check if the player can finish and then
-    //     // continue with his teammate's marbles as he can always walk past
-    //     // the endzone
-
-    //     if (this.playerCanMove(p, 77)) {
-    //         return true;
-    //     }
-    //     let possibilities = Array(6).fill(0);
-    //     for (let j = 5; j >= 0; j--) {
-    //         for (let m = 0; m < 4; m++) {
-    //             if (this.getPossibleDestinations(p, m, j + 1).length) {
-    //                 possibilities[j]++;
-    //             }
-    //         }
-    //     }
-
-    //     return (
-    //         (possibilities[5] > 0 && possibilities[0] > 1) || // [6, 1]
-    //         (possibilities[4] > 0 && possibilities[1] > 1) || // [5, 2]
-    //         (possibilities[4] > 0 && possibilities[0] > 2) || // [5, 1, 1]
-    //         (possibilities[3] > 0 && possibilities[2] > 1) || // [4, 3]
-    //         (possibilities[3] > 0 &&
-    //             possibilities[1] > 1 &&
-    //             possibilities[0] > 2) || // [4, 2, 1]
-    //         (possibilities[3] > 0 && possibilities[0] > 3) || // [4, 1, 1, 1]
-    //         (possibilities[2] > 1 && possibilities[0] > 2) || // [3, 3, 1]
-    //         (possibilities[2] > 0 && possibilities[1] > 2) || // [3, 2, 2]
-    //         (possibilities[2] > 0 &&
-    //             possibilities[1] > 1 &&
-    //             possibilities[0] > 3) || // [3, 2, 1, 1]
-    //         (possibilities[1] > 2 && possibilities[0] > 3)
-    //     ); // [2, 2, 2, 1]
-    // }
-
-    playerCanCompleteN(distance: number, p: number, excludedMarble?: number) {
-        // for distance = 3, this would be [[3], [2, 1], [1,1,1]]
-        // note that its in descending order
+    /**
+     * This function tells if a given player can complete `distance` number of
+     * moves with his marbles except for the excluded one. This is necessary to
+     * correctly assess the possibility to play a seven card, as the remaining
+     * steps have to be completed with the other marbles.
+     * A notable special case is when the excluded marble blocks another marble.
+     * Then, the other marble is unable to move, although it will be once the
+     * excluded marble moves. Therefore, this has to be taken care of separately.
+     *
+     * @param distance - Number of nodes
+     * @param p - The player
+     * @param excludedMarble - A marble that is being excluded
+     * @returns
+     */
+    playerCanCompleteDistance(
+        distance: number,
+        p: number,
+        excludedMarble?: number
+    ) {
         if (distance === 0) {
             return true;
         }
 
+        if (typeof excludedMarble !== "undefined") {
+            const n = this.marbleLocations[p][excludedMarble];
+            const value = this.nodes[n];
+
+            if (value > this.nPlayers) {
+                // the excluded marble blocks
+                for (let m = 0; m < 4; m++) {
+                    if (m === excludedMarble) {
+                        continue;
+                    }
+
+                    // compute distance to entry node, which is also the node of
+                    // the excluded marble
+                    const distanceToEntry = this.getDistanceToEntryNode(
+                        p,
+                        this.marbleLocations[p][m]
+                    );
+
+                    if (
+                        distanceToEntry !== null &&
+                        distanceToEntry <= Math.min(distance, 16)
+                    ) {
+                        // if this is the case, the player will always be able to move
+                        // the remaining distance
+                        return true;
+                    }
+                }
+            }
+        }
+
+        /* 1️⃣ Compute the partitions 
+        For example, for distance = 3, this would be [[3], [2, 1], [1,1,1]]
+        note that its in descending order */
         const partitions = computePartitions(distance);
 
         for (const partition of partitions) {
             // for each partiton compute possibilities to complete
 
-            // console.log(partition)
+            // create an array of length equal to the highest value in the partition
+            const sum = Array(partition[0]).fill(0);
 
-            const highestValue = partition[0];
-            const sum = Array(highestValue).fill(0);
+            // compute the number of occurences of each value in the partition
             for (const val of partition) {
                 // for the above example this yields [0,0,1], [1,1,0], and [3]
                 sum[val - 1]++;
@@ -687,7 +700,7 @@ export default class Board {
      * base of the respective player.
      *
      * @param n - The node to be cleared
-     * @param force - Clear even blocking marbles or marbles in the endzone
+     * @param force - Clear even blocking marbles or marbles in the endzone,
      */
     clearNode(n: number, force: boolean = false) {
         // p indicates the player whose marble is on n, if there is one
