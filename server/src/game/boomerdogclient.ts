@@ -102,6 +102,7 @@ export default class BoomerDogHandler extends BoomerDog {
         enterEndzone?: boolean;
         from?: number;
         to?: number;
+        wentOut?: boolean;
     }) {
         if (response.collateral) {
             this.emitGameEvent({ name: "marble:hit" });
@@ -110,6 +111,8 @@ export default class BoomerDogHandler extends BoomerDog {
             this.emitGameEvent({ name: "marble:swap" });
         } else if (response.enterEndzone) {
             this.emitGameEvent({ name: "marble:enter_endzone" });
+        } else if (response.wentOut) {
+            this.emitGameEvent({ name: "player:went_out" });
         } else {
             this.emitGameEvent({
                 name: "marble:moved",
@@ -402,6 +405,7 @@ export default class BoomerDogHandler extends BoomerDog {
         this.emitCards(activePlayer.userId);
         this.emitBoardData();
         this.emitGameState();
+        this.emitGameEvent({ name: "player:fold" });
 
         this.endTurn();
 
@@ -462,6 +466,8 @@ export default class BoomerDogHandler extends BoomerDog {
 
         if (!movesList.length) {
             super.fold();
+
+            this.emitGameEvent({ name: "player:fold" });
             this.endTurn();
             return;
         }

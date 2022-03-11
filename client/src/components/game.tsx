@@ -139,6 +139,12 @@ const Game = ({
                     "audio/mixkit-quick-win-video-game-notification-269.wav"
                 );
                 break;
+            case "player:went_out":
+                audio = new Audio("audio/mixkit-gaming-lock-2848.wav");
+                break;
+            case "player:fold":
+                audio = new Audio("audio/mixkit-gaming-lock-2848.wav");
+                break;
         }
         audio && audio.play();
     };

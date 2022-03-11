@@ -477,7 +477,10 @@ const Board = ({
             <AspectRatio
                 mt="0"
                 mx="auto"
+                h={"85vh"}
+                w={"85vh"}
                 maxW={BOARD_SIZE.width}
+                maxH={BOARD_SIZE.height}
                 ratio={BOARD_SIZE.width / BOARD_SIZE.height}
                 bg={useColorModeValue("gray.100", "gray.700")}
             >

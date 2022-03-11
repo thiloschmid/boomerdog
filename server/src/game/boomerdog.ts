@@ -363,6 +363,7 @@ export default class BoomerDog {
                 +move.nodes[0] >= SWAP_MOVE_OFFSET &&
                 +move.nodes[0] < SEVEN_MOVE_OFFSET,
             enterEndzone: !this.board.isRegularIndex(targetNode),
+            wentOut: move.nodes[0] === -1,
         };
     }
 
