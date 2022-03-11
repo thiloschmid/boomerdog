@@ -527,6 +527,9 @@ export default class BoomerDogHandler extends BoomerDog {
 
     computeMoveWeight(move: { nodes: number[]; collateral?: number }) {
         let moveWeight = 0;
+        if (move.nodes[0] === -1) {
+            moveWeight += 0.5;
+        }
         // destination of the move
         const nNew = move.nodes[move.nodes.length - 1];
         if (move.collateral) {

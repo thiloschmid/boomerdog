@@ -140,10 +140,12 @@ const Game = ({
                 );
                 break;
             case "player:went_out":
-                audio = new Audio("audio/mixkit-gaming-lock-2848.wav");
+                audio = new Audio("audio/mixkit-air-in-a-hit-2161.wav");
                 break;
             case "player:fold":
-                audio = new Audio("audio/mixkit-gaming-lock-2848.wav");
+                audio = new Audio(
+                    "audio/mixkit-game-quick-warning-notification-268.wav"
+                );
                 break;
         }
         audio && audio.play();
