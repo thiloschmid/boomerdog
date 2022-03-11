@@ -1,4 +1,4 @@
-export const boardNodes = {
+export const boardNodes4 = {
     nodes: [
         { id: 0, x: 601.6, y: 80.80000000000001 },
         { id: 1, x: 572.2, y: 110.20000000000002 },

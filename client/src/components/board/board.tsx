@@ -12,7 +12,8 @@ import {
 } from "@chakra-ui/react";
 
 import { cardToSvg } from "../cards/cards";
-import { boardNodes } from "./board_data";
+import { boardNodes4 } from "./board_data_4";
+import { boardNodes6 } from "./board_data_6";
 import BoomerdogAvatar, { avatarSize } from "./avatar";
 import {
     CardMoves,
@@ -24,7 +25,7 @@ import {
 } from "boomerdog-types";
 import Popup from "./popup";
 
-import { BoardNode, EndzoneNode, BaseNode, Outline, RADIUS } from "./nodes";
+import { BoardNode, EndzoneNode, BaseNode, Outline } from "./nodes";
 import { StackIcon } from "./icons";
 
 // ⚠️ This has to be consistent with the backend!
@@ -34,21 +35,11 @@ const SEVEN_MOVE_OFFSET = 1000;
 // same for swaps
 const SWAP_MOVE_OFFSET = 300;
 
-export const BOARD_SIZE = { height: 800, width: 800 };
 const SELECTION_COLOR = "teal.400";
 
-const playerBoxSize = { height: 100, width: 130 };
-const avatarPositions = [
-    { x: BOARD_SIZE.width - playerBoxSize.width - 10, y: 10 },
-    { x: 10, y: 10 },
-    { x: 10, y: BOARD_SIZE.height - playerBoxSize.height - 10 },
-    {
-        x: BOARD_SIZE.width - playerBoxSize.width - 10,
-        y: BOARD_SIZE.height - playerBoxSize.height - 10,
-    },
-];
+export const NODE_COLORS = ["gray.600", "gray.200"];
 
-export const COLORS = ["red", "yellow.400", "green.600", "blue.600"];
+const playerBoxSize = { height: 100, width: 130 };
 
 const pulse = keyframes`
     from {
@@ -99,6 +90,44 @@ const Board = ({
     fold,
     swap,
 }: BoardProps) => {
+    const boardNodes = gameData.nPlayers === 4 ? boardNodes4 : boardNodes6;
+
+    const BOARD_SIZE =
+        gameData.nPlayers === 4
+            ? { height: 800, width: 800 }
+            : { height: 800, width: 800 };
+
+    const NODE_RADIUS =
+        gameData.nPlayers === 4
+            ? { inner: 12, outer: 20 }
+            : { inner: 10, outer: 15 };
+    const NODE_STROKEWIDTH = gameData.nPlayers === 4 ? 4 : 3;
+
+    const avatarPositions =
+        gameData.nPlayers === 4
+            ? [
+                  { x: BOARD_SIZE.width - playerBoxSize.width - 10, y: 10 },
+                  { x: 10, y: 10 },
+                  { x: 10, y: BOARD_SIZE.height - playerBoxSize.height - 10 },
+                  {
+                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
+                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
+                  },
+              ]
+            : [];
+
+    const COLORS =
+        gameData.nPlayers === 4
+            ? ["red", "yellow.400", "green.600", "blue.600"]
+            : [
+                  "red",
+                  "yellow.400",
+                  "purple.400",
+                  "green.600",
+                  "blue.600",
+                  "orange",
+              ];
+
     const [popoverIsOpen, setPopoverIsOpen] = React.useState(false);
     const [expandCards, setExpandCards] = React.useState(false);
 
@@ -160,7 +189,7 @@ const Board = ({
         p?: number,
         m?: number
     ): { x: number; y: number; id: number } => {
-        if (n <= 64 && n >= 0) {
+        if (n < gameData.nPlayers * 16 && n >= 0) {
             return boardNodes.nodes[n];
         }
         if (n === -1 && typeof m !== "undefined" && typeof p !== "undefined") {
@@ -214,8 +243,8 @@ const Board = ({
             cy={data.y}
             r={
                 data.color === playerIndex
-                    ? RADIUS.inner - 0.5
-                    : RADIUS.inner - 0.5
+                    ? NODE_RADIUS.inner - 0.5
+                    : NODE_RADIUS.inner - 0.5
             }
         />
     );
@@ -259,7 +288,7 @@ const Board = ({
                 fill="none"
                 cx={0}
                 cy={0}
-                r={RADIUS.inner}
+                r={NODE_RADIUS.inner}
                 animation={pulseAnimation}
             />
             <chakra.circle
@@ -268,7 +297,7 @@ const Board = ({
                 cursor="pointer"
                 cx={0}
                 cy={0}
-                r={RADIUS.outer + 3}
+                r={NODE_RADIUS.outer + 3}
             />
         </g>
     );
@@ -333,13 +362,13 @@ const Board = ({
             <AspectRatio
                 mt="0"
                 mx="auto"
-                maxW="800px"
-                ratio={1}
+                maxW={BOARD_SIZE.width}
+                ratio={BOARD_SIZE.width / BOARD_SIZE.height}
                 bg={useColorModeValue("gray.100", "gray.700")}
             >
                 <>
                     <svg
-                        viewBox={`0 0 ${BOARD_SIZE.height} ${BOARD_SIZE.width}`}
+                        viewBox={`0 0 ${BOARD_SIZE.width} ${BOARD_SIZE.height}`}
                     >
                         {/* Place the players */}
                         {avatarPositions.map((pos, i) => (
@@ -399,28 +428,45 @@ const Board = ({
                         {boardNodes.nodes.map((data) => (
                             <BoardNode
                                 key={`boardnode-${data.x}-${data.y}`}
-                                {...data}
+                                {...{
+                                    ...data,
+                                    r: NODE_RADIUS.inner,
+                                    strokeWidth: NODE_STROKEWIDTH,
+                                }}
                             />
                         ))}
                         {/* draw bases */}
                         {boardNodes.bases.map((data) => (
                             <BaseNode
                                 key={`basenode-${data.x}-${data.y}`}
-                                {...data}
+                                {...{
+                                    ...data,
+                                    r: NODE_RADIUS.inner,
+                                    strokeWidth: NODE_STROKEWIDTH,
+                                }}
                             />
                         ))}
                         {/* draw endzones */}
                         {boardNodes.endzones.map((data) => (
                             <EndzoneNode
                                 key={`endzonenode-${data.x}-${data.y}`}
-                                {...data}
+                                {...{
+                                    ...data,
+                                    r: NODE_RADIUS.inner,
+                                    strokeWidth: NODE_STROKEWIDTH,
+                                }}
                             />
                         ))}
                         {/* draw outer circles */}
                         {boardNodes.outlines.map((data) => (
                             <Outline
                                 key={`outlinenode-${data.x}-${data.y}`}
-                                {...data}
+                                {...{
+                                    ...data,
+                                    r: NODE_RADIUS.outer,
+                                    color: COLORS[data.color],
+                                    strokeWidth: NODE_STROKEWIDTH,
+                                }}
                             />
                         ))}
                         {/* fill the board with marbles */}
@@ -472,8 +518,8 @@ const Board = ({
                                     href={cardToSvg(card)}
                                     cursor="pointer"
                                     onClick={() => setExpandCards(!expandCards)}
-                                    x="340"
-                                    y="316"
+                                    x={BOARD_SIZE.width / 2 - 120 / 2}
+                                    y={BOARD_SIZE.height / 2 - 168 / 2}
                                     width="120"
                                     height="168"
                                     key={`stack-card-${i}`}
