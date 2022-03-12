@@ -144,7 +144,7 @@ test("Check if a player can complete the seven card", () => {
     ).toStrictEqual([[14, 15, 16, 17, 18, 19, 20, 21, 22, 23]]);
     expect(board.playerCanMove(0, 10)).toBe(true);
     // expect(board.playerCanCompleteSeven(0)).toBe(true);
-    expect(board.playerCanCompleteN(7, 0)).toBe(true);
+    expect(board.playerCanCompleteDistance(7, 0)).toBe(true);
 
     board.executeMove(1, 0, [-1, 16]);
     expect(board.nodes[16]).toBe(11);
@@ -158,7 +158,7 @@ test("Check if a player can complete the seven card", () => {
     expect(board.isReachable(0, [14, 15, 16, 17, 18, 19, 20])).toBe(false);
     expect(board.playerCanMove(0, 7)).toBe(false);
     // expect(board.playerCanCompleteSeven(0)).toBe(false);
-    expect(board.playerCanCompleteN(7, 0)).toBe(false);
+    expect(board.playerCanCompleteDistance(7, 0)).toBe(false);
 });
 
 test("Check entering endzone", () => {
@@ -183,9 +183,19 @@ test("check player can finish", () => {
 
     expect(board.stepsToFinish(0)).toBe(5);
 
-    console.log(board.getPossibleDestinations(0, 0, 75, 2))
-    
-    board.setMarble(2, 0, 13) // place random marble of teammate
-    console.log(board.getPossibleDestinations(0, 0, 75, 2))
+    // console.log(board.getPossibleDestinations(0, 0, 75, 2));
 
+    board.setMarble(2, 0, 13); // place random marble of teammate
+    // console.log(board.getPossibleDestinations(0, 0, 75, 2));
+});
+
+test("case 1", () => {
+    const board = new Board(4);
+
+    board.setMarble(0, 0, 102);
+    board.setMarble(0, 1, 43);
+    board.executeMove(3, 0, [-1, 48]);
+
+    // console.log(board.playerCanCompleteDistance(7, 0));
+    // console.log(board.getPossibleDestinations(0, 1, 71));
 });

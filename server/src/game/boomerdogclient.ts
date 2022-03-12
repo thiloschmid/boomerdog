@@ -11,6 +11,8 @@ import { io } from "../api/index.js";
 import { blue, green, red, yellow } from "../api/utils/colors.js";
 import BoomerDog from "./boomerdog.js";
 
+const CARD_WEIGHTS = [10, 5, 0, 0, 1, 0, 3, 0, 0, 0, 3, 0, 5];
+
 export default class BoomerDogHandler extends BoomerDog {
     gameId: string;
     gameName: string;
@@ -429,7 +431,11 @@ export default class BoomerDogHandler extends BoomerDog {
                         card: c,
                         marble: m,
                         move: mi,
-                        weight: this.computeMoveWeight(move),
+                        weight: this.computeMoveWeight(
+                            this.activePlayerIndex,
+                            move,
+                            c
+                        ),
                     });
                 }
             }
@@ -449,7 +455,10 @@ export default class BoomerDogHandler extends BoomerDog {
                 movesList.push({
                     marble: m,
                     move: mi,
-                    weight: this.computeMoveWeight(move),
+                    weight: this.computeMoveWeight(
+                        this.activePlayerIndex,
+                        move
+                    ),
                 });
             }
         }
@@ -505,13 +514,19 @@ export default class BoomerDogHandler extends BoomerDog {
                         this.orderRemainingMoves(remainingMoves);
 
                     const bestRem = remainingMovesList[0];
+
+                    if (typeof bestRem.marble === "undefined") {
+                        console.error(`remaining moves error!`);
+                        return;
+                    }
                     const response = super.performRemainingMove(
                         bestRem.marble,
                         bestRem.move
                     );
 
                     if (!response.status) {
-                        this.handleResponse(response);
+                        response.collateral &&
+                            this.emitGameEvent({ name: "marble:hit" });
                     }
 
                     this.emitBoardData();
@@ -525,22 +540,42 @@ export default class BoomerDogHandler extends BoomerDog {
         this.endTurn();
     }
 
-    computeMoveWeight(move: { nodes: number[]; collateral?: number }) {
+    computeMoveWeight(
+        p: number,
+        move: { nodes: number[]; collateral?: number },
+        c?: number
+    ) {
         let moveWeight = 0;
         if (move.nodes[0] === -1) {
             moveWeight += 0.5;
         }
+
         // destination of the move
         const nNew = move.nodes[move.nodes.length - 1];
+        const toEntry = this.board.getDistanceToEntryNode(p, nNew);
+
+        if (toEntry !== null) {
+            moveWeight += 16 * this.nPlayers - toEntry;
+        }
+
         if (move.collateral) {
             // 💣
-            moveWeight += 10 * move.collateral;
+            moveWeight += 100 * move.collateral;
         }
         if (nNew >= 100) {
             // value entering the endzone higher with the first node yielding
             // the weight 2, and the final node yielding 5
             moveWeight += (nNew % 10) + 1;
         }
+
+        /* subtract card value */
+        if (typeof c !== "undefined") {
+            const card = this.deck.hands[p][c];
+            if (card !== null) {
+                moveWeight -= card.value;
+            }
+        }
+
         return moveWeight;
     }
 }

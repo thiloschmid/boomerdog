@@ -286,6 +286,7 @@ export default class Board {
             case -4:
             case 5:
             case 6:
+            case 7:
             case 8:
             case 9:
             case 10:
@@ -609,9 +610,27 @@ export default class Board {
             }
         }
 
+        let summedDistance = 0;
+        for (let m = 0; m < 4; m++) {
+            if (m === excludedMarble) {
+                continue;
+            }
+            let maxDistance = 0;
+            for (let d = 1; d <= distance; d++) {
+                if (this.getPossibleDestinations(p, m, d).length) {
+                    maxDistance = d;
+                }
+            }
+            console.log(`max dist for ${m} is ${maxDistance}`);
+            summedDistance += maxDistance;
+        }
+        return summedDistance >= distance;
+
         /* 1️⃣ Compute the partitions 
         For example, for distance = 3, this would be [[3], [2, 1], [1,1,1]]
         note that its in descending order */
+
+        /*
         const partitions = computePartitions(distance);
 
         for (const partition of partitions) {
@@ -648,10 +667,13 @@ export default class Board {
                 }
             }
             if (partitionWorks) {
+                console.log(`${partition} works`)
                 return true;
             }
         }
         return false;
+
+        */
     }
 
     stepsToFinish(p: number): number | null {
