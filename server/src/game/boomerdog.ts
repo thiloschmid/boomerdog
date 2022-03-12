@@ -96,7 +96,7 @@ export default class BoomerDog {
         // set new game phase
         this.gamePhase = GamePhase.Swapping;
 
-        this.activePlayerIndex = this.roundNumber % 4;
+        this.activePlayerIndex = this.roundNumber % this.nPlayers;
         this.playerStartingNext = (this.roundNumber + 1) % this.nPlayers;
     }
 
@@ -182,7 +182,7 @@ export default class BoomerDog {
     computePlayingWith() {
         this.computeIsFinished();
         this.playingWith = this.isFinished.map((value, i) =>
-            value ? (i + 2) % this.nPlayers : i
+            value ? (i + this.nPlayers / 2) % this.nPlayers : i
         );
     }
 
