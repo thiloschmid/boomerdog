@@ -8,10 +8,22 @@ import Board from "./board";
 import { GameData, GameState, GamePhase, User } from "boomerdog-types";
 
 const placeHolderMarbleLocations = [
-    [100, 101, 102, 103],
-    [110, 111, 112, 113],
-    [120, 121, 122, 123],
-    [130, 131, 132, 133],
+    { p: 0, m: 0, n: 100 },
+    { p: 0, m: 1, n: 101 },
+    { p: 0, m: 2, n: 102 },
+    { p: 0, m: 3, n: 103 },
+    { p: 1, m: 0, n: 110 },
+    { p: 1, m: 1, n: 111 },
+    { p: 1, m: 2, n: 112 },
+    { p: 1, m: 3, n: 113 },
+    { p: 2, m: 0, n: 120 },
+    { p: 2, m: 1, n: 121 },
+    { p: 2, m: 2, n: 122 },
+    { p: 2, m: 3, n: 123 },
+    { p: 3, m: 0, n: 130 },
+    { p: 3, m: 1, n: 131 },
+    { p: 3, m: 2, n: 132 },
+    { p: 3, m: 3, n: 133 },
 ];
 interface BoardWrapperProps {
     gameData: GameData;
@@ -54,11 +66,9 @@ const BoardWrapper = ({
         [],
         [],
     ]);
-    const [marbleLocations, setMarbleLocations] = React.useState<number[][]>(
-        placeHolderMarbleLocations
-    );
-
-    const boardClicked = () => {};
+    const [marbleLocations, setMarbleLocations] = React.useState<
+        { p: number; m: number; n: number }[]
+    >(placeHolderMarbleLocations);
 
     const onNodeClick = (n: number) => {
         console.log(`node ${n} clicked`);
@@ -128,7 +138,18 @@ const BoardWrapper = ({
         if (socket) {
             socket.on("board:update", (payload) => {
                 console.debug("update board", payload);
-                setMarbleLocations(payload);
+                const marbleLocations = payload.flatMap((nodes, p) =>
+                    nodes.map((n, m) => ({
+                        ...{
+                            // ...getCoords(n, p, m),
+                            // color: p,
+                            n: n,
+                            p: p,
+                            m: m,
+                        },
+                    }))
+                );
+                setMarbleLocations(marbleLocations);
             });
             socket.on("moves:update", (payload) => {
                 console.debug("update moves", payload);
@@ -139,7 +160,7 @@ const BoardWrapper = ({
                 setRemainingMoves(payload);
             });
         }
-    }, [socket, gameData.gameId]);
+    }, [socket]);
 
     return (
         <Board

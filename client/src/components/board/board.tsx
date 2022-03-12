@@ -1,7 +1,6 @@
 import * as React from "react";
 import {
     chakra,
-    keyframes,
     AspectRatio,
     Box,
     useColorModeValue,
@@ -12,8 +11,6 @@ import {
 } from "@chakra-ui/react";
 
 import { cardToSvg } from "../cards/cards";
-import { boardNodes4 } from "./board_data_4";
-import { boardNodes6 } from "./board_data_6";
 import BoomerdogAvatar, { avatarSize, avatarTextHeight } from "./avatar";
 import {
     CardMoves,
@@ -27,6 +24,8 @@ import Popup from "./popup";
 
 import { BoardNode, EndzoneNode, BaseNode, Outline } from "./nodes";
 import { StackIcon } from "./icons";
+import Marble from "./marble";
+import { getBoardSettings } from "./board_settings";
 
 // ⚠️ This has to be consistent with the backend!
 // encode moving over nodes with a seven card by adding SEVEN_MOVE_OFFSET to
@@ -39,26 +38,10 @@ const SELECTION_COLOR = "teal.400";
 
 export const NODE_COLORS = ["gray.600", "gray.200"];
 
-const playerBoxSize = { height: 100, width: 130 };
-
-const pulse = keyframes`
-    from {
-        stroke-width: 10px;
-        stroke-opacity: 1;
-        transform: scale(0);
-    }
-    to {
-        stroke-width: 2;
-        stroke-opacity: .4;
-        transform: scale(1.2);
-    }`;
-
-const pulseAnimation = `${pulse} infinite 1.5s linear`;
-
 export interface BoardProps {
     gameData: GameData;
     gameState: GameState | null;
-    marbleLocations: number[][];
+    marbleLocations: { p: number; m: number; n: number }[];
     stack: CardBase[];
     possibleMoves: CardMoves[]; // array [cards][marbles][moves]
     selectedCardIndex: number | null;
@@ -90,159 +73,6 @@ const Board = ({
     fold,
     swap,
 }: BoardProps) => {
-    const boardNodes = gameData.nPlayers === 4 ? boardNodes4 : boardNodes6;
-
-    const BOARD_SIZE =
-        gameData.nPlayers === 4
-            ? { height: 800, width: 800 }
-            : { height: 800, width: 800 };
-
-    const STACK_SIZE =
-        gameData.nPlayers === 4
-            ? {
-                  width: 100,
-                  height: 140,
-              }
-            : { width: 95, height: 132 };
-
-    const NODE_RADIUS =
-        gameData.nPlayers === 4
-            ? { inner: 12, outer: 20 }
-            : { inner: 10, outer: 15 };
-    const NODE_STROKEWIDTH = gameData.nPlayers === 4 ? 4 : 3;
-
-    const avatarPositions: {
-        x: number;
-        y: number;
-        imagePosition: { x: number; y: number };
-        textPosition: "bottom" | "top";
-        iconPosition: "right" | "left";
-    }[] =
-        gameData.nPlayers === 4
-            ? [
-                  // player 0
-                  {
-                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
-                      y: 10,
-                      imagePosition: {
-                          x: playerBoxSize.width - avatarSize,
-                          y: 0,
-                      },
-                      textPosition: "bottom",
-                      iconPosition: "left",
-                  },
-                  // player 1
-                  {
-                      x: 10,
-                      y: 10,
-                      imagePosition: { x: 0, y: 0 },
-                      textPosition: "bottom",
-                      iconPosition: "right",
-                  },
-                  // player 2
-                  {
-                      x: 10,
-                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
-                      imagePosition: {
-                          x: 0,
-                          y: playerBoxSize.height - avatarSize,
-                      },
-                      textPosition: "top",
-                      iconPosition: "right",
-                  },
-                  // player 3
-                  {
-                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
-                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
-                      imagePosition: {
-                          x: playerBoxSize.width - avatarSize,
-                          y: playerBoxSize.height - avatarSize,
-                      },
-                      textPosition: "top",
-                      iconPosition: "left",
-                  },
-              ]
-            : [
-                  // player 0
-                  {
-                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
-                      y: 10,
-                      imagePosition: {
-                          x: playerBoxSize.width - avatarSize,
-                          y: 0,
-                      },
-                      textPosition: "bottom",
-                      iconPosition: "left",
-                  },
-                  // player 1
-                  {
-                      x: BOARD_SIZE.width / 2 - playerBoxSize.width / 2,
-                      y: 10,
-                      imagePosition: {
-                          x: playerBoxSize.width - avatarSize,
-                          y: 0,
-                      },
-                      textPosition: "bottom",
-                      iconPosition: "left",
-                  },
-                  // player 2
-                  {
-                      x: 10,
-                      y: 10,
-                      imagePosition: {
-                          x: 0,
-                          y: 0,
-                      },
-                      textPosition: "bottom",
-                      iconPosition: "right",
-                  },
-                  // player 3
-                  {
-                      x: 10,
-                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
-                      imagePosition: {
-                          x: 0,
-                          y: playerBoxSize.height - avatarSize,
-                      },
-                      textPosition: "top",
-                      iconPosition: "right",
-                  },
-                  // player 4
-                  {
-                      x: BOARD_SIZE.width / 2 - playerBoxSize.width / 2,
-                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
-                      imagePosition: {
-                          x: 0,
-                          y: playerBoxSize.height - avatarSize,
-                      },
-                      textPosition: "top",
-                      iconPosition: "right",
-                  },
-                  // player 5
-                  {
-                      x: BOARD_SIZE.width - playerBoxSize.width - 10,
-                      y: BOARD_SIZE.height - playerBoxSize.height - 10,
-                      imagePosition: {
-                          x: playerBoxSize.width - avatarSize,
-                          y: playerBoxSize.height - avatarSize,
-                      },
-                      textPosition: "top",
-                      iconPosition: "left",
-                  },
-              ];
-
-    const COLORS =
-        gameData.nPlayers === 4
-            ? ["red", "yellow.400", "green.600", "blue.600"]
-            : [
-                  "red",
-                  "yellow.400",
-                  "purple.400",
-                  "green.600",
-                  "blue.600",
-                  "orange",
-              ];
-
     const [popoverIsOpen, setPopoverIsOpen] = React.useState(false);
     const [expandCards, setExpandCards] = React.useState(false);
 
@@ -254,6 +84,19 @@ const Board = ({
     const [selectedMarble, setSelectedMarble] =
         React.useState<number | null>(null);
     const [jokerMove, setJokerMove] = React.useState<string>("regular"); // "swap" | "seven" | "regular"
+
+    const {
+        pulseAnimation,
+        playerBoxSize,
+        boardNodes,
+        getCoords,
+        BOARD_SIZE,
+        STACK_SIZE,
+        NODE_RADIUS,
+        NODE_STROKEWIDTH,
+        avatarPositions,
+        COLORS,
+    } = getBoardSettings(gameData.nPlayers);
 
     const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
 
@@ -298,71 +141,6 @@ const Board = ({
             setSelectedMarble(null);
         }
     };
-
-    const getCoords = (
-        n: number,
-        p?: number,
-        m?: number
-    ): { x: number; y: number; id: number } => {
-        if (n < gameData.nPlayers * 16 && n >= 0) {
-            return boardNodes.nodes[n];
-        }
-        if (n === -1 && typeof m !== "undefined" && typeof p !== "undefined") {
-            return boardNodes.bases[4 * p + m];
-        } else {
-            //(n >= 100)
-            // 100 -> 0, 110 -> 4, 120 -> 8
-            const i = ((n - 100) % 10) + 4 * Math.floor((n - 100) / 10);
-            return boardNodes.endzones[i];
-        }
-    };
-
-    const OccupiedNode = (data: {
-        id: number;
-        x: number;
-        y: number;
-        color: number;
-        p: number;
-        m: number;
-    }) => (
-        <chakra.circle
-            cursor="pointer"
-            onMouseOver={() => {
-                if (
-                    gameState?.playingWith &&
-                    data.p === gameState.playingWith[playerIndex]
-                ) {
-                    setShowMove(data.m);
-                    if (selectedMarble !== null && selectedMarble !== data.m) {
-                        setSelectedMarble(null);
-                    }
-                }
-            }}
-            onMouseOut={() => setShowMove(null)}
-            onClick={
-                gameState?.playingWith &&
-                data.p === gameState.playingWith[playerIndex]
-                    ? () => {
-                          marbleClicked(data.m);
-                      }
-                    : undefined
-            }
-            fill={COLORS[data.color]}
-            stroke={SELECTION_COLOR}
-            strokeWidth={
-                data.p === playerIndex && data.m === selectedMarble ? 5 : 0
-            }
-            key={`occupied-${data.x} ${data.y}`}
-            className="step"
-            cx={data.x}
-            cy={data.y}
-            r={
-                data.color === playerIndex
-                    ? NODE_RADIUS.inner - 0.5
-                    : NODE_RADIUS.inner - 0.5
-            }
-        />
-    );
 
     interface PossibleMoveMarkerProps {
         isVisible: boolean;
@@ -472,13 +250,62 @@ const Board = ({
         );
     };
 
+    // const OccupiedNode = (data: {
+    //     id: number;
+    //     x: number;
+    //     y: number;
+    //     color: number;
+    //     p: number;
+    //     m: number;
+    // }) => (
+    //     <chakra.circle
+    //         cursor="pointer"
+    //         onMouseOver={() => {
+    //             if (
+    //                 gameState?.playingWith &&
+    //                 data.p === gameState.playingWith[playerIndex]
+    //             ) {
+    //                 setShowMove(data.m);
+    //                 if (selectedMarble !== null && selectedMarble !== data.m) {
+    //                     setSelectedMarble(null);
+    //                 }
+    //             }
+    //         }}
+    //         onMouseOut={() => setShowMove(null)}
+    //         onClick={
+    //             gameState?.playingWith &&
+    //             data.p === gameState.playingWith[playerIndex]
+    //                 ? () => {
+    //                       marbleClicked(data.m);
+    //                   }
+    //                 : undefined
+    //         }
+    //         fill={COLORS[data.color]}
+    //         stroke={SELECTION_COLOR}
+    //         strokeWidth={
+    //             data.p === playerIndex && data.m === selectedMarble ? 5 : 0
+    //         }
+    //         key={`occupied-${data.x} ${data.y}`}
+    //         className="step"
+    //         // cx={data.x}
+    //         // cy={data.y}
+    //         cx={data.x}
+    //         cy={data.y}
+    //         r={
+    //             data.color === playerIndex
+    //                 ? NODE_RADIUS.inner - 0.5
+    //                 : NODE_RADIUS.inner - 0.5
+    //         }
+    //     />
+    // );
+
     return (
         <Box>
             <AspectRatio
                 mt="0"
                 mx="auto"
-                h={"85vh"}
-                w={"85vh"}
+                h={"min(85vh,100vw)"}
+                w={"min(85vh,100vw)"}
                 maxW={BOARD_SIZE.width}
                 maxH={BOARD_SIZE.height}
                 ratio={BOARD_SIZE.width / BOARD_SIZE.height}
@@ -523,8 +350,10 @@ const Board = ({
                                 color={COLORS[i]}
                                 cardsIcon={{
                                     show:
-                                        gameState?.gamePhase ===
-                                            GamePhase.Playing &&
+                                        (gameState?.gamePhase ===
+                                            GamePhase.Playing ||
+                                            gameState?.gamePhase ===
+                                                GamePhase.WaitingForSevenMove) &&
                                         !gameState?.hasFolded[i],
                                     number:
                                         (gameState?.numberOfCards &&
@@ -538,7 +367,10 @@ const Board = ({
                             <g
                                 transform={`translate(${
                                     ["760,200", "200,10", "10,570", "570,760"][
-                                        gameState.playerStartingNext
+                                        (gameState.playerStartingNext +
+                                            gameData.nPlayers -
+                                            1) %
+                                            gameData.nPlayers
                                     ]
                                 })`}
                             >
@@ -591,19 +423,42 @@ const Board = ({
                             />
                         ))}
                         {/* fill the board with marbles */}
-                        {marbleLocations.map((nodes, p) =>
-                            nodes.map((n, m) => (
-                                <OccupiedNode
-                                    key={`${p} ${m}`}
-                                    {...{
-                                        ...getCoords(n, p, m),
-                                        color: p,
-                                        p: p,
-                                        m: m,
-                                    }}
-                                />
-                            ))
-                        )}
+                        {marbleLocations.map((marble) => (
+                            <Marble
+                                {...{
+                                    key: `${marble.p} ${marble.m} ${marble.n}`,
+                                    ...getCoords(marble.n, marble.p, marble.m),
+                                    r: NODE_RADIUS.inner - 0.5,
+                                    color: COLORS[marble.p],
+                                    // handleMouseOver: () => {
+                                    //     if (
+                                    //         gameState?.playingWith &&
+                                    //         marble.p ===
+                                    //             gameState.playingWith[
+                                    //                 playerIndex
+                                    //             ]
+                                    //     ) {
+                                    //         setShowMove(marble.m);
+                                    //         if (
+                                    //             selectedMarble !== null &&
+                                    //             selectedMarble !== marble.m
+                                    //         ) {
+                                    //             setSelectedMarble(null);
+                                    //         }
+                                    //     }
+                                    // },
+                                    // handleClick:
+                                    //     gameState?.playingWith &&
+                                    //     marble.p ===
+                                    //         gameState.playingWith[playerIndex]
+                                    //         ? () => {
+                                    //               marbleClicked(marble.m);
+                                    //           }
+                                    //         : undefined,
+                                    // handleMouseOut: () => setShowMove(null),
+                                }}
+                            />
+                        ))}
                         {/* if a seven card was played, show remaining steps */}
                         {stepsRemaining
                             ? remainingMoves.map(
