@@ -21,6 +21,8 @@ import {
     Text,
     useBreakpointValue,
     Collapse,
+    Divider,
+    Spinner,
 } from "@chakra-ui/react";
 import {
     HamburgerIcon,
@@ -28,11 +30,12 @@ import {
     ChevronDownIcon,
     ChevronUpIcon,
 } from "@chakra-ui/icons";
+import { IoPaw } from "react-icons/io5";
+import { BiGlobe } from "react-icons/bi";
 
-import logo from "../images/blaze_icon.svg";
+// import logo from "../images/blaze_icon.svg";
 import { ColorModeSwitcher } from "../ColorModeSwitcher";
 import { AuthContext } from "../App";
-import ConnectionIndicator from "./connection_indicator";
 
 const Links = ["Chats", "Leaderboard", "About"];
 
@@ -64,6 +67,15 @@ export interface NavBarProps {
         getButtonProps: (props?: any) => any;
         getDisclosureProps: (props?: any) => any;
     };
+    gameBrowserDisclosure: {
+        isOpen: boolean;
+        onOpen: () => void;
+        onClose: () => void;
+        onToggle: () => void;
+        isControlled: boolean;
+        getButtonProps: (props?: any) => any;
+        getDisclosureProps: (props?: any) => any;
+    };
 }
 
 const NavBar = ({
@@ -71,6 +83,7 @@ const NavBar = ({
     isConnected,
     loginElement,
     collapseDisclosure,
+    gameBrowserDisclosure,
 }: NavBarProps) => {
     const { state, dispatch } = React.useContext(AuthContext);
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -79,6 +92,8 @@ const NavBar = ({
         console.log("logout");
         dispatch({ type: "LOGOUT" });
     };
+
+    const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
 
     return (
         <>
@@ -113,72 +128,75 @@ const NavBar = ({
                             display={{ md: "none" }}
                             onClick={isOpen ? onClose : onOpen}
                         />
-                        <HStack spacing={2} alignItems={"center"}>
-                            <Box
-                                // mr={{ base: "0", md: "1em" }}
-                                mr={0}
-                                ml={"4em"}
-                            >
-                                <Image
-                                    src={logo}
-                                    w={{ base: "2em", md: "3em" }}
-                                />
+                        <HStack
+                            spacing={2}
+                            alignItems={"center"}
+                            color={useColorModeValue("#44337A", "#E9D8FD")}
+                        >
+                            <Box mr={0} ml={"4em"}>
+                                <IoPaw size={50} />
                             </Box>
-                            {/* {useBreakpointValue({ base: false, md: true }) && (
-                                <Heading p={0} m={0} color="cyan.700">
+                            {useBreakpointValue({ base: false, md: true }) && (
+                                <Heading p={0} m={0} fontFamily={"mono"}>
                                     BoomerDog
                                 </Heading>
-                            )} */}
-                            {/* <HStack
-                            as={"nav"}
-                            spacing={4}
-                            display={{ base: "none", md: "flex" }}
-                        >
-                            {Links.map((link) => (
-                                <NavLink key={link}>{link}</NavLink>
-                            ))}
-                        </HStack> */}
+                            )}
                         </HStack>
+                        {isLoggedIn && !isConnected && (
+                            <HStack>
+                                <Spinner
+                                    thickness="4px"
+                                    speed="0.65s"
+                                    emptyColor="gray.200"
+                                    color="blue.500"
+                                    // size="xl"
+                                />
+                                <Text>connecting to server</Text>
+                            </HStack>
+                        )}
                         <Flex alignItems="center">
                             <Flex
                                 alignItems={"center"}
                                 display={{ base: "none", md: "flex" }}
                             >
-                                {isLoggedIn && (
-                                    <ConnectionIndicator {...{ isConnected }} />
-                                )}
+                                {
+                                    <IconButton
+                                        aria-label="expand game browser"
+                                        icon={
+                                            <BiGlobe
+                                                color={iconColor}
+                                                size={30}
+                                            />
+                                        }
+                                        mr={5}
+                                        onClick={gameBrowserDisclosure.onToggle}
+                                    />
+                                }
                                 {isLoggedIn ? (
-                                    <Button
-                                        onClick={logout}
-                                        variant="solid"
-                                        colorScheme={"red"}
-                                        mr={4}
-                                    >
-                                        Logout
-                                    </Button>
+                                    <Menu>
+                                        <MenuButton
+                                            rounded={"full"}
+                                            cursor={"pointer"}
+                                        >
+                                            <HStack>
+                                                <Text mx={2}>
+                                                    {state.user?.name}
+                                                </Text>
+                                                <Avatar
+                                                    // size={"sm"}
+                                                    src={state.user?.avatar_url}
+                                                />
+                                            </HStack>
+                                        </MenuButton>
+                                        <MenuList>
+                                            <MenuItem onClick={logout}>
+                                                Logout
+                                            </MenuItem>
+                                        </MenuList>
+                                    </Menu>
                                 ) : (
                                     loginElement
                                 )}
-                                <Menu>
-                                    <MenuButton
-                                        as={Button}
-                                        rounded={"full"}
-                                        variant={"link"}
-                                        cursor={"pointer"}
-                                        minW={0}
-                                    ></MenuButton>
-                                    <Text mx={2}>{state.user?.name}</Text>
-                                    <Avatar
-                                        // size={"sm"}
-                                        src={state.user?.avatar_url}
-                                    />
-                                    <MenuList>
-                                        <MenuItem>Link 1</MenuItem>
-                                        <MenuItem>Link 2</MenuItem>
-                                        <MenuDivider />
-                                        <MenuItem>Link 3</MenuItem>
-                                    </MenuList>
-                                </Menu>
                             </Flex>
                             <ColorModeSwitcher
                                 ml="1em"

@@ -6,7 +6,7 @@ import Layout from "./components/layout";
 import Game from "./components/game";
 import Login from "./components/login";
 
-import theme from "./theme"
+import theme from "./theme";
 
 import {
     initialState,
@@ -24,6 +24,7 @@ export const App = () => {
     const [isConnected, setIsConnected] = React.useState(false);
 
     const collapseDisclosure = useDisclosure({ defaultIsOpen: true });
+    const gameBrowserDisclosure = useDisclosure({ defaultIsOpen: true });
 
     return (
         <AuthContext.Provider value={{ state, dispatch }}>
@@ -38,6 +39,9 @@ export const App = () => {
                                     isConnected={isConnected}
                                     loginElement={<Login />}
                                     collapseDisclosure={collapseDisclosure}
+                                    gameBrowserDisclosure={
+                                        gameBrowserDisclosure
+                                    }
                                 >
                                     {state.isLoggedIn && state.authToken && (
                                         // Here, sockets exist 🔥
@@ -47,6 +51,7 @@ export const App = () => {
                                                 isConnected,
                                                 setIsConnected,
                                                 collapseDisclosure,
+                                                gameBrowserDisclosure,
                                             }}
                                         />
                                     )}

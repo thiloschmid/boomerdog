@@ -42,6 +42,7 @@ const Avatar = ({
     cardsIcon,
 }: AvatarProps) => {
     const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
+    const textColor = useColorModeValue("#EDF2F7", "#2D3748");
 
     return (
         <svg
@@ -152,21 +153,30 @@ const Avatar = ({
                 {/* show number of cards */}
                 {cardsIcon.show && (
                     <>
-                        <image
+                        {/* <image
                             x={0}
                             y={size.height / 2 - iconSize / 2}
                             width={iconSize}
                             height={iconSize}
                             opacity={1}
                             href="cards/card_back.svg"
-                        />
+                        /> */}
+                        <chakra.rect
+                            x={0}
+                            y={size.height / 2 - iconSize / 2}
+                            width={(iconSize * 5) / 7}
+                            height={iconSize}
+                            opacity={1}
+                            fill={iconColor}
+                            rx={3}
+                        ></chakra.rect>
                         <text
                             fontWeight="bold"
-                            textAnchor="left"
-                            y={size.height / 2 + avatarTextHeight / 2}
-                            x={10}
+                            textAnchor="middle"
+                            y={size.height / 2 + avatarTextHeight/2 - 2}
+                            x={11}
                             height={avatarTextHeight}
-                            fill="#2D3748"
+                            fill={textColor}
                         >
                             {cardsIcon.number}
                         </text>
