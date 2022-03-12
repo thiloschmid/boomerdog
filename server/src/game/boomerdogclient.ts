@@ -259,6 +259,7 @@ export default class BoomerDogHandler extends BoomerDog {
                 name: "game:finished",
                 data: { victoriousTeam: this.getVictoriousTeam() },
             });
+            this.emitGameState();
             return;
         }
         if (super.roundIsFinished()) {

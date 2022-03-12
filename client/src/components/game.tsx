@@ -112,7 +112,7 @@ const Game = ({
     };
 
     const handleGameEvent = (event: GameEvent) => {
-        console.log(event.name);
+        console.log(event.name, event.data);
         let audio;
         switch (event.name) {
             case "marble:moved":
@@ -123,14 +123,15 @@ const Game = ({
                 audio = new Audio("audio/mixkit-long-pop-2358.wav");
                 break;
             case "game:finished":
-                if (player !== null && gameData !== null) {
-                    const playerIndex = gameData?.players
+                if (player && gameData) {
+                    const playerIndex = gameData.players
                         .map((p) => p.userId)
                         .indexOf(player.userId);
 
                     if (
                         event.data?.victoriousTeam ===
-                        playerIndex % (gameData.nPlayers / 2)
+                        (playerIndex + gameData.nPlayers) %
+                            (gameData.nPlayers / 2)
                     ) {
                         audio = new Audio("audio/level-win-6416.mp3");
                     } else {

@@ -201,6 +201,7 @@ export default class BoomerDog {
             this.computeIsFinished();
 
             if (this.gameIsFinished()) {
+                this.gamePhase = GamePhase.Finalizing;
                 return;
             }
             this.computePlayingWith();
@@ -362,7 +363,7 @@ export default class BoomerDog {
             swap:
                 +move.nodes[0] >= SWAP_MOVE_OFFSET &&
                 +move.nodes[0] < SEVEN_MOVE_OFFSET,
-            enterEndzone: 
+            enterEndzone:
                 !this.board.isRegularIndex(targetNode) &&
                 this.board.isRegularIndex(from),
             wentOut: move.nodes[0] === -1,
