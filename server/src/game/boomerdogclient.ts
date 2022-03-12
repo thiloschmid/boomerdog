@@ -565,7 +565,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (nNew >= 100) {
             // value entering the endzone higher with the first node yielding
             // the weight 2, and the final node yielding 5
-            moveWeight += (nNew % 10) + 1;
+            moveWeight += ((nNew % 10) + 1)*20;
         }
 
         /* subtract card value */

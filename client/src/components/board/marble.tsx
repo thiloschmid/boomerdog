@@ -6,24 +6,28 @@ const Marble = (props: {
     y: number;
     r: number;
     color: string;
+    selected: boolean;
     handleClick?: () => void;
-    // handleMouseOver?: () => void;
-    // handleMouseOut?: () => void;
+    handleMouseOver?: () => void;
+    handleMouseOut?: () => void;
 }) => (
     <Animate
-        show={true}
-        start={{ x: props.x, y: props.y }}
-        update={{ x: [props.x], y: [props.y], timing: { duration: 1000 } }}
+        // show={true}
+        start={{ x: [props.x], y: [props.y] }}
+        update={{ x: [props.x], y: [props.y] }}
     >
         {(position) => (
             <chakra.circle
                 cx={position.x}
                 cy={position.y}
                 fill={props.color}
+                stroke={"cyan"}
+                strokeWidth={props.selected ? 3 : 0}
                 r={props.r}
                 onClick={props.handleClick}
-                // onMouseOver={props.handleMouseOver}
-                // cursor={props.handleClick ? "pointer" : "auto"}
+                onMouseOver={props.handleMouseOver}
+                onMouseOut={props.handleMouseOut}
+                cursor={props.handleClick ? "pointer" : "auto"}
             />
         )}
     </Animate>

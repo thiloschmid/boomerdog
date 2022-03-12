@@ -80,7 +80,8 @@ const Board = ({
     // selected and
     // a) the player is hovering over a marble
     // b) the player clicked on a marble which has multiple possible moves
-    const [showMove, setShowMove] = React.useState<number | null>(null);
+    const [hoveredMarble, setHoveredMarble] =
+        React.useState<number | null>(null);
     const [selectedMarble, setSelectedMarble] =
         React.useState<number | null>(null);
     const [jokerMove, setJokerMove] = React.useState<string>("regular"); // "swap" | "seven" | "regular"
@@ -105,10 +106,13 @@ const Board = ({
             // handle seven card
             if (remainingMoves[m].length > 1) {
                 setPopoverIsOpen(true);
-                setSelectedMarble(m);
+                if (selectedMarble === m) {
+                    setSelectedMarble(null);
+                } else {
+                    setSelectedMarble(m);
+                }
             } else if (remainingMoves[m][0]) {
                 moveRemaining(m, 0);
-                setShowMove(null);
                 setSelectedMarble(null);
             }
         } else {
@@ -116,10 +120,13 @@ const Board = ({
             if (selectedCardIndex !== null) {
                 if (possibleMoves[selectedCardIndex][m].length > 1) {
                     setPopoverIsOpen(true);
-                    setSelectedMarble(m);
+                    if (selectedMarble === m) {
+                        setSelectedMarble(null);
+                    } else {
+                        setSelectedMarble(m);
+                    }
                 } else if (possibleMoves[selectedCardIndex][m][0]) {
                     moveSelected(m, 0);
-                    setShowMove(null);
                     setSelectedMarble(null);
                 }
             }
@@ -137,7 +144,6 @@ const Board = ({
                 moveSelected(selectedMarble, t);
             }
             setPopoverIsOpen(false);
-            setShowMove(null);
             setSelectedMarble(null);
         }
     };
@@ -172,7 +178,7 @@ const Board = ({
     }: PossibleTargetMarkerProps) => (
         <g
             transform={`translate(${data.x},${data.y})`}
-            visibility={isVisible ? "data." : "hidden"}
+            visibility={isVisible ? "visible" : "hidden"}
             pointerEvents={isVisible ? "auto" : "none"}
         >
             <chakra.circle
@@ -195,15 +201,14 @@ const Board = ({
         </g>
     );
 
-    const moveShouldBeShown = (move: number[]) => {
-        if (
-            selectedCardIndex !== null &&
-            cards[selectedCardIndex]?.value === 0
-        ) {
+    const moveShouldBeShown = (m: number, move: number[]) => {
+        if (selectedCardIndex === null) {
+            return !!remainingMoves;
+        }
+        if (cards[selectedCardIndex]?.value === 0) {
             if (move[0] >= SEVEN_MOVE_OFFSET) {
                 return jokerMove === "seven";
             } else if (move[0] >= SWAP_MOVE_OFFSET) {
-                console.log(move[0]);
                 return jokerMove === "swap";
             } else {
                 return jokerMove === "regular";
@@ -212,8 +217,10 @@ const Board = ({
         return true;
     };
 
-    const renderMove = (move: number[], i: number) => {
-        const isVisible = moveShouldBeShown(move);
+    const renderMove = (m: number, move: number[], i: number) => {
+        let isVisible =
+            moveShouldBeShown(m, move) &&
+            (m === hoveredMarble || m === selectedMarble);
         if (move[0] === -1) {
             move = [move[1]];
         } else if (move[0] >= SEVEN_MOVE_OFFSET) {
@@ -249,55 +256,6 @@ const Board = ({
             </React.Fragment>
         );
     };
-
-    // const OccupiedNode = (data: {
-    //     id: number;
-    //     x: number;
-    //     y: number;
-    //     color: number;
-    //     p: number;
-    //     m: number;
-    // }) => (
-    //     <chakra.circle
-    //         cursor="pointer"
-    //         onMouseOver={() => {
-    //             if (
-    //                 gameState?.playingWith &&
-    //                 data.p === gameState.playingWith[playerIndex]
-    //             ) {
-    //                 setShowMove(data.m);
-    //                 if (selectedMarble !== null && selectedMarble !== data.m) {
-    //                     setSelectedMarble(null);
-    //                 }
-    //             }
-    //         }}
-    //         onMouseOut={() => setShowMove(null)}
-    //         onClick={
-    //             gameState?.playingWith &&
-    //             data.p === gameState.playingWith[playerIndex]
-    //                 ? () => {
-    //                       marbleClicked(data.m);
-    //                   }
-    //                 : undefined
-    //         }
-    //         fill={COLORS[data.color]}
-    //         stroke={SELECTION_COLOR}
-    //         strokeWidth={
-    //             data.p === playerIndex && data.m === selectedMarble ? 5 : 0
-    //         }
-    //         key={`occupied-${data.x} ${data.y}`}
-    //         className="step"
-    //         // cx={data.x}
-    //         // cy={data.y}
-    //         cx={data.x}
-    //         cy={data.y}
-    //         r={
-    //             data.color === playerIndex
-    //                 ? NODE_RADIUS.inner - 0.5
-    //                 : NODE_RADIUS.inner - 0.5
-    //         }
-    //     />
-    // );
 
     return (
         <Box>
@@ -425,67 +383,55 @@ const Board = ({
                         {/* fill the board with marbles */}
                         {marbleLocations.map((marble) => (
                             <Marble
+                                /* CANNOT SET A KEY, ELSE THE ANIMATION DOES NOT WORK ⚠️ */
                                 {...{
-                                    key: `${marble.p} ${marble.m} ${marble.n}`,
                                     ...getCoords(marble.n, marble.p, marble.m),
                                     r: NODE_RADIUS.inner - 0.5,
                                     color: COLORS[marble.p],
-                                    // handleMouseOver: () => {
-                                    //     if (
-                                    //         gameState?.playingWith &&
-                                    //         marble.p ===
-                                    //             gameState.playingWith[
-                                    //                 playerIndex
-                                    //             ]
-                                    //     ) {
-                                    //         setShowMove(marble.m);
-                                    //         if (
-                                    //             selectedMarble !== null &&
-                                    //             selectedMarble !== marble.m
-                                    //         ) {
-                                    //             setSelectedMarble(null);
-                                    //         }
-                                    //     }
-                                    // },
-                                    // handleClick:
-                                    //     gameState?.playingWith &&
-                                    //     marble.p ===
-                                    //         gameState.playingWith[playerIndex]
-                                    //         ? () => {
-                                    //               marbleClicked(marble.m);
-                                    //           }
-                                    //         : undefined,
-                                    // handleMouseOut: () => setShowMove(null),
+                                    handleClick:
+                                        gameState?.playingWith &&
+                                        marble.p ===
+                                            gameState.playingWith[playerIndex]
+                                            ? () => {
+                                                  marbleClicked(marble.m);
+                                              }
+                                            : undefined,
+                                    handleMouseOver: () => {
+                                        setHoveredMarble(marble.m);
+                                    },
+                                    handleMouseOut: () =>
+                                        setHoveredMarble(null),
+                                    selected:
+                                        marble.p === playerIndex &&
+                                        marble.m === selectedMarble,
                                 }}
                             />
                         ))}
                         {/* if a seven card was played, show remaining steps */}
-                        {stepsRemaining
-                            ? remainingMoves.map(
-                                  (moves, m) =>
-                                      (showMove === m ||
-                                          selectedMarble === m) &&
-                                      moves !== null &&
-                                      moves.map(
-                                          (move, i) =>
-                                              move && renderMove(move.nodes, i)
-                                      )
-                              )
-                            : possibleMoves?.length &&
-                              selectedCardIndex !== null &&
-                              possibleMoves[selectedCardIndex] &&
-                              possibleMoves[selectedCardIndex].map(
-                                  (moves, m) =>
-                                      (showMove === m ||
-                                          selectedMarble === m) &&
-                                      moves !== null &&
-                                      moves.map(
-                                          (move, i) =>
-                                              move &&
-                                              isActive &&
-                                              renderMove(move.nodes, i)
-                                      )
-                              )}
+                        {stepsRemaining &&
+                            remainingMoves.map(
+                                (moves, m) =>
+                                    moves !== null &&
+                                    moves.map(
+                                        (move, i) =>
+                                            move && renderMove(m, move.nodes, i)
+                                    )
+                            )}
+                        {/* otherwise show possible moves */}
+                        {!stepsRemaining &&
+                            possibleMoves?.length &&
+                            selectedCardIndex !== null &&
+                            possibleMoves[selectedCardIndex] &&
+                            possibleMoves[selectedCardIndex].map(
+                                (moves, m) =>
+                                    moves !== null &&
+                                    moves.map(
+                                        (move, i) =>
+                                            move &&
+                                            isActive &&
+                                            renderMove(m, move.nodes, i)
+                                    )
+                            )}
                         {/* show the card stack */}
                         {stack.map((card, i) =>
                             i === stack.length - 1 ? (
