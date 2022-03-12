@@ -39,6 +39,15 @@ interface GameProps {
         getButtonProps: (props?: any) => any;
         getDisclosureProps: (props?: any) => any;
     };
+    gameBrowserDisclosure: {
+        isOpen: boolean;
+        onOpen: () => void;
+        onClose: () => void;
+        onToggle: () => void;
+        isControlled: boolean;
+        getButtonProps: (props?: any) => any;
+        getDisclosureProps: (props?: any) => any;
+    };
 }
 
 const Game = ({
@@ -46,6 +55,7 @@ const Game = ({
     isConnected,
     setIsConnected,
     collapseDisclosure,
+    gameBrowserDisclosure,
 }: GameProps) => {
     const [socket, setSocket] = React.useState<BoomerDogSocket | null>(null);
     const [player, setPlayer] = React.useState<User | null>(null);
@@ -199,9 +209,16 @@ const Game = ({
         <Box>
             {socket && player && (
                 <>
-                    {collapseDisclosure.isOpen && (
-                        <GameBrowser {...{ socket, player }} />
-                    )}
+                    {/* {gameBrowserDisclosure.isOpen && ( */}
+                    <GameBrowser
+                        {...{
+                            socket,
+                            player,
+                            isOpen: gameBrowserDisclosure.isOpen,
+                            handleClose: gameBrowserDisclosure.onClose,
+                        }}
+                    />
+                    {/* )} */}
                     {player.gameId && gameData && (
                         <Stack mt="1em">
                             {/* <Heading>{`${gameData.gameName}`}</Heading> */}
