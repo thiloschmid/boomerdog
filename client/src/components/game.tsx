@@ -78,6 +78,8 @@ const Game = ({
                 (response: IoResponse) => {
                     if (response.status) {
                         console.error(response.message);
+                    } else {
+                        gameBrowserDisclosure.onClose();
                     }
                 }
             );

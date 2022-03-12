@@ -29,7 +29,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
     ) => {
         const user = getUserFromSocket(socket);
 
-        console.log(user)
+        console.log(user);
 
         if (!user) {
             callback({ status: 1, message: "Player not found" });
@@ -159,7 +159,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
         }
 
         // perhaps check if successful to remove it from the game browser
-        return game.startGame();
+        callback(game.startGame());
     };
 
     const performSwap = (payload: number, callback: IoCallback<IoResponse>) => {

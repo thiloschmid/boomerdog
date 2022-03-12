@@ -211,6 +211,8 @@ export default class BoomerDogHandler extends BoomerDog {
         this.emitBoardData();
         this.emitGameData();
         this.startRound();
+
+        return { status: 0 };
     }
 
     /* ⚽ handle gameplay */
@@ -555,7 +557,7 @@ export default class BoomerDogHandler extends BoomerDog {
         const toEntry = this.board.getDistanceToEntryNode(p, nNew);
 
         if (toEntry !== null) {
-            moveWeight += 16 * this.nPlayers - toEntry;
+            moveWeight += (16 * this.nPlayers - toEntry) / 2;
         }
 
         if (move.collateral) {
@@ -564,8 +566,8 @@ export default class BoomerDogHandler extends BoomerDog {
         }
         if (nNew >= 100) {
             // value entering the endzone higher with the first node yielding
-            // the weight 2, and the final node yielding 5
-            moveWeight += ((nNew % 10) + 1)*20;
+            // the weight 20, and the final node yielding 50
+            moveWeight += ((nNew % 10) + 1) * 20;
         }
 
         /* subtract card value */
