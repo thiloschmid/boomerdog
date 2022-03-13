@@ -186,6 +186,10 @@ export default class BoomerDogHandler extends BoomerDog {
         return { status: 0 };
     }
 
+    playerSpectate(user: User) {
+
+    }
+
     playerQuit(user: User) {
         // if (this.hasStarted) {
         //     return { status: 1, message: "Game has already started" };
@@ -194,8 +198,10 @@ export default class BoomerDogHandler extends BoomerDog {
         if (index === -1) {
             return { status: 1, message: "Player is not in the game" };
         }
-        this.players.splice(index);
+        this.players.splice(index, 1);
         delete user.gameId;
+        this.emitGameData();
+        this.emitGameState();
 
         console.log(blue(`${user.name} quit`));
         return { status: 0 };
