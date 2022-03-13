@@ -103,6 +103,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
 
             // emit game specific data
             game.emitGameData();
+            game.emitGameState();
             game.emitBoardData();
         }
         callback(response);
@@ -136,6 +137,32 @@ export const registerGameHandler = (socket: ServerSocket) => {
 
             game.emitGameData();
         }
+    };
+
+    const changePlaces = (
+        payload: {
+            gameId: string;
+            newPosition: number;
+        },
+        callback: IoCallback<IoResponse>
+    ) => {
+        const game = gamesMap.get(payload.gameId);
+        const user = getUserFromSocket(socket);
+
+        if (!user) {
+            callback({ status: 1, message: "User not found" });
+            return;
+        }
+        if (payload.gameId !== user.gameId) {
+            callback({ status: 1, message: "User not in game" });
+            return;
+        }
+        if (!game) {
+            callback({ status: 1, message: "Game does not exist" });
+            return;
+        }
+
+        game.playerChangePosition(user, payload.newPosition);
     };
 
     const startGame = (
@@ -270,8 +297,8 @@ export const registerGameHandler = (socket: ServerSocket) => {
 
         if (user && game && game.players.includes(user)) {
             game.emitGameData(user.userId);
+            game.emitGameState(user.userId);
             if (game.hasStarted) {
-                game.emitGameState(user.userId);
                 game.emitCards(user.userId);
                 game.emitBoardData(user.userId);
                 if (game.getActivePlayer()?.userId === user.userId) {
@@ -284,6 +311,7 @@ export const registerGameHandler = (socket: ServerSocket) => {
         }
     };
 
+    socket.on("game:change_places", changePlaces);
     socket.on("games:read", emitGameList);
     socket.on("game:create", createGame);
     socket.on("game:join", joinGame);

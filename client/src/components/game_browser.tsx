@@ -81,7 +81,7 @@ const GameBrowser = ({
                     <Tbody>
                         {games.map((g) => {
                             const isPlayersGame = g.players
-                                .map((p) => p.userId)
+                                .map((p) => p?.userId)
                                 .includes(player.userId);
                             return (
                                 <Tr
@@ -92,7 +92,7 @@ const GameBrowser = ({
                                     <Td isNumeric>{g.nPlayers}</Td>
                                     <Td>
                                         {g.players
-                                            .map((p) => p.name)
+                                            .map((p) => p?.name || "AI")
                                             .join(", ")}
                                     </Td>
                                     <Td>

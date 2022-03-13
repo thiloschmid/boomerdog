@@ -1,7 +1,7 @@
 import * as React from "react";
 import { chakra, useColorModeValue } from "@chakra-ui/react";
 import { User } from "boomerdog-types";
-import { DiscardIcon, ExchangeIcon } from "./icons";
+import { DiscardIcon, ExchangeIcon, SwapIcon } from "./icons";
 
 export const avatarSize = 80;
 const avatarStrokeWidth = 6;
@@ -17,7 +17,7 @@ interface AvatarProps {
     textPosition: "top" | "bottom";
     iconPosition: "right" | "left";
     avatarUrl: string;
-    player: User;
+    player: User | null;
     position: { x: number; y: number; index: number };
     color: string;
     isActive: boolean;
@@ -25,6 +25,7 @@ interface AvatarProps {
     swapIcon: { show: boolean; swapCompleted: boolean };
     hasFolded?: boolean;
     cardsIcon: { show: boolean; number: number };
+    changePlacesIcon: { show: boolean; onClick: () => void };
 }
 const Avatar = ({
     size,
@@ -40,6 +41,7 @@ const Avatar = ({
     swapIcon,
     hasFolded,
     cardsIcon,
+    changePlacesIcon,
 }: AvatarProps) => {
     const iconColor = useColorModeValue("#2D3748", "#EDF2F7");
     const textColor = useColorModeValue("#EDF2F7", "#2D3748");
@@ -129,6 +131,27 @@ const Avatar = ({
                 },0)`}
             >
                 {/* swap indicator */}
+                {changePlacesIcon.show && (
+                    <g
+                        transform={`translate(0,${
+                            size.height / 2 - iconSize / 2
+                        })`}
+                        cursor={"pointer"}
+                        onClick={changePlacesIcon.onClick}
+                    >
+                        <chakra.rect
+                            x={0}
+                            y={0}
+                            width={iconSize}
+                            height={iconSize}
+                            opacity={1}
+                            fill={iconColor}
+                            rx={3}
+                        ></chakra.rect>
+                        <SwapIcon color={textColor} size={iconSize} />
+                    </g>
+                )}
+                {/* swap indicator */}
                 {swapIcon.show && (
                     <g
                         transform={`translate(0,${
@@ -173,7 +196,7 @@ const Avatar = ({
                         <text
                             fontWeight="bold"
                             textAnchor="middle"
-                            y={size.height / 2 + avatarTextHeight/2 - 2}
+                            y={size.height / 2 + avatarTextHeight / 2 - 2}
                             x={11}
                             height={avatarTextHeight}
                             fill={textColor}

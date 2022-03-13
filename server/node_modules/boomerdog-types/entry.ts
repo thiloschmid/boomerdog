@@ -37,7 +37,7 @@ interface GameData {
     gameId: string;
     gameName: string;
     nPlayers: number; // board size
-    players: User[];
+    players: (User | null)[];
     hasStarted: boolean;
 }
 

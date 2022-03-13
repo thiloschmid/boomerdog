@@ -121,6 +121,14 @@ export interface ClientToServerEvents {
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
 
+    "game:change_places": (
+        payload: {
+            gameId: string;
+            newPosition: number;
+        },
+        callback: IoCallback<IoResponse>
+    ) => void;
+
     "game:swap_card": (
         payload: number,
         callback: IoCallback<IoResponse>

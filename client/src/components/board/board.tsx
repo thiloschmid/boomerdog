@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 
 import { cardToSvg } from "../cards/cards";
-import BoomerdogAvatar, { avatarSize, avatarTextHeight } from "./avatar";
+import BoomerdogAvatar from "./avatar";
 import {
     CardMoves,
     CardBase,
@@ -52,6 +52,7 @@ export interface BoardProps {
     remainingMoves: MarbleMoves[];
     moveSelected: (m: number, t: number) => void;
     moveRemaining: (m: number, t: number) => void;
+    changePlaces: (newPosition: number) => void;
     fold: () => void;
     swap: () => void;
 }
@@ -70,6 +71,7 @@ const Board = ({
     remainingMoves,
     moveSelected,
     moveRemaining,
+    changePlaces,
     fold,
     swap,
 }: BoardProps) => {
@@ -282,8 +284,8 @@ const Board = ({
                                 textPosition={pos.textPosition}
                                 iconPosition={pos.iconPosition}
                                 avatarUrl={
-                                    i < gameData.players.length
-                                        ? gameData.players[i].avatarUrl
+                                    gameData.players[i]
+                                        ? gameData.players[i]!.avatarUrl
                                         : "/dog.jpg"
                                 }
                                 swapIcon={{
@@ -317,6 +319,16 @@ const Board = ({
                                         (gameState?.numberOfCards &&
                                             gameState.numberOfCards[i]) ||
                                         0,
+                                }}
+                                /* Allow the players to change places ♻️*/
+                                changePlacesIcon={{
+                                    show:
+                                        gameState?.gamePhase ===
+                                            GamePhase.Waiting &&
+                                        i !== playerIndex,
+                                    onClick: () => {
+                                        changePlaces(i);
+                                    },
                                 }}
                             />
                         ))}

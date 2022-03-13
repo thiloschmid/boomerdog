@@ -17,7 +17,7 @@ export default class BoomerDogHandler extends BoomerDog {
     gameId: string;
     gameName: string;
     nPlayers: number;
-    players: User[];
+    players: (User | null)[];
     hasStarted: boolean;
 
     constructor(gameId: string, gameName: string, nPlayers: number) {
@@ -26,11 +26,11 @@ export default class BoomerDogHandler extends BoomerDog {
         this.gameId = gameId;
         this.gameName = gameName;
         this.nPlayers = nPlayers;
-        this.players = new Array<User>();
+        this.players = new Array<User | null>(this.nPlayers).fill(null);
         this.hasStarted = false;
     }
 
-    /* ☎️ EMITTER METHODS
+    /* 📢 EMITTER METHODS 📢
      * Emit game specific information. The optional argument userId specifies
      * a particular recipient. If it is not specified, all players will
      * receive the data.
@@ -86,10 +86,16 @@ export default class BoomerDogHandler extends BoomerDog {
         for (let p = 0; p < this.players.length; p++) {
             // send always if userId is not defined
             // if userId is defined, only send to that particular userId
-            (!userId || userId === this.players[p].userId) &&
-                io
-                    .to(this.players[p].userId)
-                    .emit("cards:update", super.getPlayerCards(p));
+            const playerUserId = this.players.at(p)?.userId;
+            if (
+                playerUserId && // don't emit if it is not defined
+                (typeof userId === "undefined" || playerUserId === playerUserId)
+            ) {
+                io.to(playerUserId).emit(
+                    "cards:update",
+                    super.getPlayerCards(p)
+                );
+            }
         }
     }
 
@@ -98,7 +104,7 @@ export default class BoomerDogHandler extends BoomerDog {
         io.to(userId || this.gameId).emit("game:event", event);
     }
 
-    handleResponse(response: {
+    handleMoveResponse(response: {
         collateral?: number;
         swap?: boolean;
         enterEndzone?: boolean;
@@ -123,7 +129,7 @@ export default class BoomerDogHandler extends BoomerDog {
         }
     }
 
-    /* 💦 get data */
+    /* 💦 🎣 get data 🗳️ */
 
     getGameData(): GameData {
         return {
@@ -171,7 +177,8 @@ export default class BoomerDogHandler extends BoomerDog {
 
     playerJoin(user: User) {
         // check if the game is full
-        if (this.players.length >= this.nPlayers) {
+        const freeSpot = this.players.indexOf(null);
+        if (freeSpot === -1) {
             return { status: 1, message: "The game is full" };
         }
 
@@ -181,14 +188,37 @@ export default class BoomerDogHandler extends BoomerDog {
         }
 
         user.gameId = this.gameId;
-        this.players.push(user);
+        this.players[freeSpot] = user;
 
         return { status: 0 };
     }
 
-    playerSpectate(user: User) {
+    playerChangePosition(user: User, newPosition: number) {
+        if (this.hasStarted) {
+            return { status: 1, message: "Game has already started" };
+        }
+        const previousPosition = this.players.indexOf(user);
 
+        if (previousPosition === -1) {
+            return { status: 1, message: "Player is not in the game" };
+        }
+
+        const otherPlayer = this.players.at(newPosition);
+        if (otherPlayer || otherPlayer === null) {
+            // switch them
+            [this.players[previousPosition], this.players[newPosition]] = [
+                this.players[newPosition],
+                this.players[previousPosition],
+            ];
+        } else {
+            return { status: 1, message: "Invalid choice of new position" };
+        }
+        this.emitGameData();
+        this.emitGameState();
+        return { status: 0 };
     }
+
+    playerSpectate(user: User) {}
 
     playerQuit(user: User) {
         // if (this.hasStarted) {
@@ -227,15 +257,11 @@ export default class BoomerDogHandler extends BoomerDog {
         super.setupRound();
         this.emitCards();
 
-        for (let p = this.players.length; p < this.nPlayers; p++) {
+        for (let p = 0; p < this.nPlayers; p++) {
             // swap random card for AI players
-            const nCards = this.deck.hands[p].reduce(
-                (prev, current) => (current === null ? prev : ++prev),
-                0
-            );
-            const randomCard = Math.floor(Math.random() * nCards);
-
-            super.storeSwapCard(p, randomCard);
+            if (this.players[p] === null) {
+                this.aiSwaps(p);
+            }
         }
 
         this.emitGameState();
@@ -345,7 +371,7 @@ export default class BoomerDogHandler extends BoomerDog {
             this.emitCards(activePlayer.userId);
 
             // emit appropriate game events
-            this.handleResponse(response);
+            this.handleMoveResponse(response);
 
             if (this.gamePhase === GamePhase.WaitingForSevenMove) {
                 this.emitBoardData();
@@ -477,6 +503,16 @@ export default class BoomerDogHandler extends BoomerDog {
         return movesList;
     }
 
+    aiSwaps(p: number) {
+        const nCards = this.deck.hands[p].reduce(
+            (prev, current) => (current === null ? prev : ++prev),
+            0
+        );
+        const randomCard = Math.floor(Math.random() * nCards);
+
+        super.storeSwapCard(p, randomCard);
+    }
+
     aiMoves() {
         console.log(`${green(`Select AI ${this.activePlayerIndex} move`)}`);
         const allMoves = super.getPossibleMoves();
@@ -501,7 +537,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (response.status) {
             console.warn(response.message);
         } else {
-            this.handleResponse(response);
+            this.handleMoveResponse(response);
             this.emitBoardData();
             this.emitGameState();
 
@@ -581,7 +617,7 @@ export default class BoomerDogHandler extends BoomerDog {
         if (typeof c !== "undefined") {
             const card = this.deck.hands[p][c];
             if (card !== null) {
-                moveWeight -= card.value;
+                moveWeight -= CARD_WEIGHTS[card.value];
             }
         }
 

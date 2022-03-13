@@ -69,6 +69,10 @@ export interface ClientToServerEvents {
     "game:reconnect": (payload: GameIdentifierPayload) => void;
     "board:node:clicked": (payload: number) => void;
     "board:marble:clicked": (payload: number) => void;
+    "game:change_places": (payload: {
+        gameId: string;
+        newPosition: number;
+    }, callback: IoCallback<IoResponse>) => void;
     "game:swap_card": (payload: number, callback: IoCallback<IoResponse>) => void;
     "game:perform_move": (payload: PerformMovePayload, callback: IoCallback<IoResponse>) => void;
     "game:perform_remaining_move": (payload: PerformRemainingMovePayload, callback: IoCallback<IoResponse>) => void;

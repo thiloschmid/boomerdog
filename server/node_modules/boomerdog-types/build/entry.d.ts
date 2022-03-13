@@ -20,7 +20,7 @@ interface GameData {
     gameId: string;
     gameName: string;
     nPlayers: number;
-    players: User[];
+    players: (User | null)[];
     hasStarted: boolean;
 }
 declare enum GamePhase {

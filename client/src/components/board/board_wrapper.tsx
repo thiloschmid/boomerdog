@@ -70,14 +70,17 @@ const BoardWrapper = ({
         { p: number; m: number; n: number }[]
     >(placeHolderMarbleLocations);
 
-    const onNodeClick = (n: number) => {
-        console.log(`node ${n} clicked`);
-        // socket && socket.emit("board:node:clicked", n);
-    };
-
-    const onMarbleClick = (n: number) => {
-        console.log(`node ${n} clicked`);
-        // socket && socket.emit("board:marble:clicked", n);
+    const changePlaces = (newPosition: number) => {
+        socket &&
+            socket.emit(
+                "game:change_places",
+                { gameId: gameData.gameId, newPosition: newPosition },
+                (response: IoResponse) => {
+                    if (!response.status) {
+                        console.error(response.message);
+                    }
+                }
+            );
     };
 
     const moveSelected = (m: number, mi: number) => {
@@ -173,12 +176,11 @@ const BoardWrapper = ({
                 cards,
                 isActive,
                 playerIndex,
-                onNodeClick,
-                onMarbleClick,
                 stepsRemaining,
                 remainingMoves,
                 moveSelected, // move with the selected marble
                 moveRemaining, // move rest of the seven steps 7️⃣
+                changePlaces,
                 stack,
                 fold,
                 swap,

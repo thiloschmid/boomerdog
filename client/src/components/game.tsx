@@ -125,7 +125,7 @@ const Game = ({
             case "game:finished":
                 if (player && gameData) {
                     const playerIndex = gameData.players
-                        .map((p) => p.userId)
+                        .map((p) => p?.userId)
                         .indexOf(player.userId);
 
                     if (
@@ -257,7 +257,7 @@ const Game = ({
                                             player.userId
                                         }
                                         playerIndex={gameData.players
-                                            .map((p) => p.userId)
+                                            .map((p) => p?.userId)
                                             .indexOf(player.userId)}
                                         stepsRemaining={
                                             // only relevant for the seven card

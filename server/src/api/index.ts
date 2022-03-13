@@ -3,6 +3,7 @@ import cors from "cors";
 import axios from "axios";
 import { Server } from "socket.io";
 import { createServer } from "http";
+import { v4 as uuidv4 } from "uuid";
 
 import { emitGameList, registerGameHandler } from "./handlers/game_handler.js";
 import { green, red } from "./utils/colors.js";
@@ -97,7 +98,7 @@ const onConnection = async (socket: ServerSocket) => {
             // create User
 
             user = {
-                name: data.name || data.login, // if name is not set, show the login
+                name: data.name || data.login || token || uuidv4(), // assign the game a unique id, // if name is not set, show the login
                 userId: `${data.id}`,
                 avatarUrl: data.avatar_url,
             };
