@@ -66,7 +66,7 @@ const Game = ({
         React.useState<(CardBase | null)[]>(placeHolderCards);
     const [selectedCard, setSelectedCard] = React.useState<number | null>(null);
 
-    const { state, dispatch } = React.useContext(AuthContext);
+    const { state } = React.useContext(AuthContext);
 
     const startGame = () => {
         socket &&
@@ -199,14 +199,15 @@ const Game = ({
         } else {
             socket?.close();
         }
-    }, [state.user, authToken]);
+        // eslint-disable-next-line
+    }, [state.user, authToken, socket, setIsConnected]);
 
     React.useEffect(() => {
         if (socket && player && player.gameId && gameState === null) {
             console.debug("Try to reconnect");
             socket.emit("game:reconnect", { gameId: player.gameId });
         }
-    }, [socket, player]);
+    }, [socket, player, gameState]);
 
     return (
         <Box>

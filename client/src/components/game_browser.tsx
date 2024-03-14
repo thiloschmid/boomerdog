@@ -9,7 +9,6 @@ import {
     Tr,
     useColorModeValue,
     CloseButton,
-    HStack,
     Flex,
     Collapse,
 } from "@chakra-ui/react";

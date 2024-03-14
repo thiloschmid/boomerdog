@@ -1,9 +1,6 @@
 import * as React from "react";
-import { Image, useDisclosure } from "@chakra-ui/react";
-import { Box, HStack, IconButton } from "@chakra-ui/react";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { Box } from "@chakra-ui/react";
 
-import logo from "../images/blaze_icon.svg";
 import NavBar from "./navbar";
 
 export interface LayoutProps {

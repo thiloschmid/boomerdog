@@ -1,5 +1,4 @@
 import {
-    chakra,
     Box,
     CloseButton,
     Text,

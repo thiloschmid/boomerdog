@@ -1,11 +1,9 @@
 import * as React from "react";
-import { Dispatch } from "react";
 import {
     Button,
     Input,
     Drawer,
     DrawerBody,
-    DrawerFooter,
     DrawerHeader,
     DrawerOverlay,
     DrawerContent,

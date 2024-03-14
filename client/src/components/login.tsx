@@ -8,7 +8,6 @@ import {
     ModalOverlay,
     ModalContent,
     ModalHeader,
-    ModalFooter,
     ModalBody,
     ModalCloseButton,
 } from "@chakra-ui/react";
@@ -26,28 +25,28 @@ const Login = () => {
 
     const { client_id, redirect_uri } = state;
 
-    const fetchUserData = (token: string) => {
-        fetch("https://api.github.com/user", {
-            method: "get",
-            headers: {
-                Authorization: `token ${token}`,
-            },
-        })
-            .then((response) => response.json())
-            .then((userData) => {
-                console.log(userData);
-                dispatch({
-                    type: "LOGIN",
-                    payload: {
-                        authToken: token,
-                        user: userData,
-                        isLoggedIn: true,
-                    },
-                });
-            });
-    };
-
     React.useEffect(() => {
+        const fetchUserData = (token: string) => {
+            fetch("https://api.github.com/user", {
+                method: "get",
+                headers: {
+                    Authorization: `token ${token}`,
+                },
+            })
+                .then((response) => response.json())
+                .then((userData) => {
+                    console.log(userData);
+                    dispatch({
+                        type: "LOGIN",
+                        payload: {
+                            authToken: token,
+                            user: userData,
+                            isLoggedIn: true,
+                        },
+                    });
+                });
+        };
+
         // After requesting Github access, Github redirects back to your app with a code parameter
         const url = window.location.href;
         const hasCode = url.includes("?code=");

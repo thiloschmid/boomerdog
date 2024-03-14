@@ -5,7 +5,7 @@ import { IoResponse, MarbleMoves } from "boomerdog-types";
 import { BoomerDogSocket } from "../../api/socket-client";
 import Board from "./board";
 
-import { GameData, GameState, GamePhase, User } from "boomerdog-types";
+import { GameData, GameState, User } from "boomerdog-types";
 
 const placeHolderMarbleLocations = [
     { p: 0, m: 0, n: 100 },
@@ -128,10 +128,8 @@ const BoardWrapper = ({
                 "game:swap_card",
                 selectedCardIndex,
                 (response: IoResponse) => {
-                    {
-                        if (response.status) {
-                            console.error(response.message);
-                        }
+                    if (response.status) {
+                        console.error(response.message);
                     }
                 }
             );

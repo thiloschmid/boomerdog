@@ -1,6 +1,6 @@
 import { AspectRatio, chakra, Flex } from "@chakra-ui/react";
 import * as React from "react";
-import { CardBase, CardClickedResponse } from "boomerdog-types";
+import { CardBase } from "boomerdog-types";
 import { BoomerDogSocket } from "../../api/socket-client";
 
 /*

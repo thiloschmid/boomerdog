@@ -1,7 +1,5 @@
 import * as React from "react";
-import { Link as RouterLink } from "react-router-dom";
 import {
-    Image,
     Heading,
     Box,
     Flex,
@@ -14,14 +12,12 @@ import {
     MenuButton,
     MenuList,
     MenuItem,
-    MenuDivider,
     useDisclosure,
     useColorModeValue,
     Stack,
     Text,
     useBreakpointValue,
     Collapse,
-    Divider,
     Spinner,
 } from "@chakra-ui/react";
 import {
