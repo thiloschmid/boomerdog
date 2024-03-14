@@ -136,39 +136,22 @@ app.get("/token", async function (req, res) {
     // exchange the code for an access token
     const code = req.query.code;
     let token;
-
-    if (process.env.NODE_ENV === "production") {
-        try {
-            const response = await axios({
-                method: "post",
-                url: `https://github.com/login/oauth/access_token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}`,
-                headers: {
-                    accept: "application/json",
-                },
-            });
-            token = response.data.access_token;
-        } catch (err) {
-            console.error(err);
-            res.send({ status: 1, message: "Error fetching token" });
-            return;
-        }
-    } else {
-        // use the gatekeeper proxy for local development
-        const proxy_url = "http://localhost:9999/authenticate";
-
-        try {
-            const response = (await axios.get(`${proxy_url}/${code}`)) as {
-                data: {
-                    token: string;
-                };
-            };
-            token = response.data.token;
-        } catch (e) {
-            console.error(e);
-            res.send({ status: 1, message: "Error fetching token" });
-            return;
-        }
+    
+    try {
+        const response = await axios({
+            method: "post",
+            url: `https://github.com/login/oauth/access_token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}`,
+            headers: {
+                accept: "application/json",
+            },
+        });
+        token = response.data.access_token;
+    } catch (err) {
+        console.error(err);
+        res.send({ status: 1, message: "Error fetching token" });
+        return;
     }
+   
     if (token) {
         res.send({ status: 0, token: `${token}` });
     } else {
