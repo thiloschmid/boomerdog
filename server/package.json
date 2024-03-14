@@ -10,7 +10,7 @@
         "test": "jest"
     },
     "engines": {
-        "node": "17.x"
+        "node": ">17.x"
     },
     "author": "",
     "license": "ISC",
